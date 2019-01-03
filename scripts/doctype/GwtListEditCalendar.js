@@ -58,12 +58,13 @@ var GwtListEditCalendar = Class.create(GwtListEditWindow, {
   },
   _hideInput: function() {
     var cell = this.getAnchorCell();
+    var leftPosition = this._getOffsetLeft(cell);
     $j('#cell_edit_window').css({
       'display': 'none'
     });
     $j('#GwtDateTimePicker').css({
       'top': this._getOffsetTop(cell),
-      'left': this._getOffsetLeft(cell),
+      'left': leftPosition,
       'z-index': 1
     });
     cell = this;
@@ -85,7 +86,29 @@ var GwtListEditCalendar = Class.create(GwtListEditWindow, {
     } else
       format = g_user_date_format;
     this.cal = new GwtDateTimePicker(GwtListEditWindow.inputID, format, useTime);
+    this.addMultipleEditMsg();
     return false;
+  },
+  addMultipleEditMsg: function() {
+    if (!window.g_full_calendar_edit)
+      return;
+    var msgStr;
+    if (this.numCanEdit == 1)
+      return;
+    else
+      msgStr = this.numCanEdit + this.msgRowsUpdated;
+    if (this.numCannotEdit > 0) {
+      msgStr = msgStr + "<br/>";
+      if (this.numCannotEdit == 1)
+        msgStr += this.msgRowNotUpdated;
+      else
+        msgStr += this.numCannotEdit + this.msgRowsNotUpdated;
+    }
+    var div = new Element('div');
+    div.style.marginTop = 2;
+    div.style.fontWeight = "normal";
+    div.update(msgStr);
+    $('window.GwtDateTimePicker').appendChild(div);
   },
   toString: function() {
     return "GwtListEditCalendar";

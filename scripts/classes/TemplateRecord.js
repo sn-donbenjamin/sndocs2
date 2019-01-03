@@ -29,14 +29,12 @@ var TemplateRecord = Class.create({
       var item = items[i];
       var name = item.getAttribute(this.NAME);
       var e = g_form.getGlideUIElement(name);
-      if (e && (e.getType() == "currency" || e.getType() == "price"))
-        if (e.getChildElementById(e.getID() + ".display"))
+      if (e && (e.getType() == "currency" || e.getType() == "price")) {
+        if (e.getChildElementById(e.getID() + ".display")) {
           name += ".display";
+        }
+      }
       var widget = g_form.getControl(name);
-      if (!widget)
-        continue;
-      if (!g_form.isEditableField(e, widget))
-        continue;
       this.applyItem(name, item.getAttribute(this.VALUE));
     }
   },

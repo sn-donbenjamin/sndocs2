@@ -6,10 +6,9 @@ function refFieldChangeResponse(request, args) {
   var parts = elementName.split(".");
   parts.shift();
   var sName = parts.join(".") + ".";
-  var nodes = new Array();
   if (args[1]) {
     var fields = args[1].split(',');
-    nodes = setNodes(sName, fields, request);
+    setNodes(sName, fields, request);
     return;
   }
   jslog("************** WHAT ARE WE DOING HERE *********************");

@@ -792,8 +792,10 @@ function fieldMatches(search, retitem) {
   return false;
 }
 
-function lightWeightReferenceLink(inputName, tableName) {
-  if (typeof(g_cart) != 'undefined') {
+function lightWeightReferenceLink(inputName, tableName, addOnRefClick) {
+  if (typeof(addOnRefClick) != "undefined" && addOnRefClick) {
+    if (typeof(g_cart) == "undefined")
+      g_cart = new SCCartV2();
     g_cart.showReferenceForm(inputName, tableName);
     return;
   }

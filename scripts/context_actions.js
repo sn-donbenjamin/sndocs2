@@ -240,6 +240,11 @@ function personalizer(strIdent, strForm, strSysId) {
   if (scopeElement && scopeElement.value) {
     addInput(form, 'HIDDEN', 'sysparm_domain_scope', scopeElement.value);
   }
+  if (typeof GlideTransactionScope != 'undefined') {
+    GlideTransactionScope.appendTransactionScope(function(name, value) {
+      addInput(form, 'HIDDEN', name, value);
+    });
+  }
   form.submit();
 }
 
@@ -256,6 +261,11 @@ function personalizeList(listId, tableName) {
     addInput(form, 'HIDDEN', 'sysparm_collection', parentForm['sysparm_collection'].value);
   else
     addInput(form, 'HIDDEN', 'sysparm_collection', '');
+  if (typeof GlideTransactionScope !== 'undefined') {
+    GlideTransactionScope.appendTransactionScope(function(name, value) {
+      addInput(form, 'HIDDEN', name, value);
+    });
+  }
   form.submit();
 }
 

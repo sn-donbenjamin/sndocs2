@@ -119,6 +119,7 @@ var GwtListEditGridSelector = Class.create(GwtCellSelector, {
     }
   },
   _selectAndDrawCells: function(e) {
+    e = this.retrieveCellFromNestedDOMElement(e, 'DIV');
     this._selectCells(e);
     this._addToSelection();
     this._drawSelection(this.colFrom, this.colTo, this.rowFrom, this.rowTo);
@@ -138,7 +139,7 @@ var GwtListEditGridSelector = Class.create(GwtCellSelector, {
   getSelectedRows: function() {
     var result = [];
     for (var key in this.selectedCells) {
-      var recPos = window.g_detail_row ? (this._parseKey(key).row * 2) - 1 : this._parseKey(key).row;
+      var recPos = window.g_detail_row && window.g_detail_row_present ? (this._parseKey(key).row * 2) - 1 : this._parseKey(key).row;
       if (result.indexOf(recPos) < 0)
         result.push(recPos);
     }

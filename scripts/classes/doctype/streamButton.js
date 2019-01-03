@@ -6,6 +6,7 @@ $j(function($) {
     var table = $('table.list_table[data-list_id]');
     var listid = table.attr('data-list_id');
     var query = table.attr('query');
+    query = encodeURIComponent(query);
     var url = "$stream.do?sysparm_table=" + listid + "&sysparm_nostack=yes&sysparm_query=" + query;
     var target = 'parent';
     if (shouldUseFormPane())
@@ -13,8 +14,10 @@ $j(function($) {
     url += "&sysparm_link_target=" + target;
     createStreamReader(url);
   });
-  $('.form_stream_button').click(function() {
-    var url = "$stream.do?sysparm_table=" + g_form.getTableName() + "&sysparm_sys_id=" + g_form.getUniqueValue();
+  $(document).on('click', '.form_stream_button', function() {
+    var url = "$stream.do?sysparm_table=" + g_form.getTableName();
+    url += "&sysparm_sys_id=" + g_form.getUniqueValue();
+    url += "&sysparm_stack=no";
     createStreamReader(url);
   });
 
@@ -31,14 +34,24 @@ $j(function($) {
   function createStreamReader(url) {
     if ($('.list_stream_reader').length)
       return;
-    var frame = '	<iframe src="' + url + '"></iframe>';
+    var frame = '	<iframe src="' + url + '" id="list_stream_reader_frame"></iframe>';
     var $div = $('<div class="list_stream_reader">' +
       '<div class="list_stream_plank_header">' +
-      '<span class="list_stream_reader_close"><i class="icon-chevron-right"></i><i class="icon-chevron-right"></i></span><span>' + getMessage('Activity Stream') + '</span>' +
+      '<span class="list_stream_reader_close"><i class="icon-double-chevron-right"></i></span><span>' + getMessage('Activity Stream') + '</span>' +
       '</div>' +
       frame +
       '</div>');
     $('body').append($div);
+    $('#list_stream_reader_frame').bind('load', function() {
+      if (NOW.compact) {
+        $(this).contents().find('html').addClass('compact');
+      }
+      CustomEvent.observe('compact', function(newValue) {
+        var method = newValue ? 'addClass' : 'removeClass';
+        $('#list_stream_reader_frame').contents()
+          .find('html')[method]('compact');
+      })
+    });
     resizeStreamReader($div);
     $(window).bind('resize.streamreader', function() {
       unfreezeTableWidth();

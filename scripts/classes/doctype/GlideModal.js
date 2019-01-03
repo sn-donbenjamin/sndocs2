@@ -60,6 +60,16 @@
       ajax.addParam("sysparm_name", this.id);
       ajax.getXML(this._renderFromAjax.bind(this));
     },
+    switchView: function(newView) {
+      this.setPreferenceAndReload({
+        'sysparm_view': newView
+      });
+    },
+    setPreferenceAndReload: function(params) {
+      for (var key in params)
+        this.preferences[key] = params[key];
+      this.render();
+    },
     _renderFromAjax: function(response) {
       var xml = response.responseXML;
       var newBody = xml.getElementsByTagName("html")[0];
@@ -85,13 +95,19 @@
       _frameChanged();
     },
     _createModal: function() {
+      var template;
       if (this.$window) {
         this.updateTitle();
         this.updateSize();
         return;
       }
+      if (this.template) {
+        template = this.template
+      } else {
+        template = getTemplate();
+      }
       this._closeIdenticalModals();
-      var html = new Template(getTemplate()).evaluate({
+      var html = new Template(template).evaluate({
         title: this.title,
         id: this.id,
         size: this.size,

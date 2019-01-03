@@ -1,14 +1,15 @@
 /*! RESOURCE: /scripts/classes/GwtPollDialog.js */
 var GwtPollDialog = Class.create(GlideDialogWindow, {
-  initialize: function(tableName, query, rows, view, action) {
+  initialize: function(tableName, query, rows, view, action, fields) {
     GlideDialogWindow.prototype.initialize.call(this, 'export_poll_dialog');
-    var keys = ["Export in Progress", "Export Complete", "Export Canceled", "Export failed", "Internal error"];
+    var keys = ["Export in Progress", "Export Complete", "Export Canceled", "Export failed", "Internal error", "Finished Export. Exported {0} of {1} rows"];
     this.msgs = getMessages(keys);
     this.tableName = tableName;
     this.query = query;
     this.rows = rows;
     this.view = view;
     this.action = action;
+    this.fields = fields;
     this.setPreference('table', 'export_poll');
     var q = this.query.replace(/&/g, "@99@");
     this.setPreference('sysparm_query', q);
@@ -16,6 +17,7 @@ var GwtPollDialog = Class.create(GlideDialogWindow, {
     this.setPreference('sysparm_export', this.action);
     this.setPreference('sysparm_view', this.view);
     this.setPreference('sysparm_rows', this.rows);
+    this.setPreference('sysparm_fields', this.fields);
     this.pollInterval = 1000;
     this.jobId = null;
     this.timerId = null;
@@ -66,8 +68,11 @@ var GwtPollDialog = Class.create(GlideDialogWindow, {
       $('poll_img').hide();
       $('export_complete').show();
       this.setTitle(this.msgs["Export Complete"]);
-      if (this.action.indexOf('unload_') == 0) {
-        $('poll_text_wiki').show();
+      var isAdmin = $('is_admin').value;
+      if (this.action.indexOf('unload_') == 0 && isAdmin == "true") {
+        var gr = new GlideRecord("sys_poll");
+        gr.addQuery("job_id", this.jobId);
+        gr.query(this._showExportStatusMsg.bind(this));
       }
       return;
     } else if (answer.indexOf('error') == 0) {
@@ -98,6 +103,15 @@ var GwtPollDialog = Class.create(GlideDialogWindow, {
       $('download_button').show();
       $('export_canceled').hide();
       this._queuePoll.call(this);
+    }
+  },
+  _showExportStatusMsg: function(gRecord) {
+    if (gRecord.next()) {
+      maxRows = gRecord.getValue('max');
+      if (this.rows > maxRows) {
+        $('poll_text_export_status').innerHTML = formatMessage(this.msgs['Finished Export. Exported {0} of {1} rows'], maxRows, this.rows);
+        $('poll_text_wiki').show();
+      }
     }
   },
   _queuePoll: function() {

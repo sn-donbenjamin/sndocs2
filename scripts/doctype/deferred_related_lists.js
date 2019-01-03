@@ -23,7 +23,8 @@ $j(function($) {
       return;
     var url = new GlideURL('list2_deferred_related_lists.do');
     url.addParam('sysparm_table', g_form.getTableName());
-    url.addParam('sysparm_sys_id', g_form.getUniqueValue().trim());
+    url.addParam('sysparm_keep_related_lists_open', 'true');
+    url.addEncodedString('sysparm_sys_id=' + g_form.getUniqueValue().trim());
     url.addParam('sysparm_view', $('#sysparm_view').val());
     if ($('#sysparm_domain'))
       url.addParam('sysparm_domain', $('#sysparm_domain').val());
@@ -55,13 +56,19 @@ $j(function($) {
     });
   }
   CustomEvent.observe('list.loaded', function(table, list) {
+    if (!table) {
+      return;
+    }
+    if (!list) {
+      return;
+    }
     if (list.getReferringURL().indexOf('list2_deferred_related_lists.do') != -1)
       list.setReferringURL(window.location.pathname + window.location.search);
   });
 
   function setupLoadingMessage() {
     loadingTimer = setTimeout(function() {
-      $('.related-list-loading').fadeIn().get(0).scrollIntoView();
+      $('.related-list-loading').fadeIn();
     }, loadingTimeout)
   }
 

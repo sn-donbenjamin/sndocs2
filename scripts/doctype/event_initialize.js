@@ -21,6 +21,9 @@ addAfterPageLoadedEvent(function() {
   });
 
   function acPopulate(element) {
+    if (!element) {
+      return;
+    }
     var answer = element.ac;
     if (answer)
       return answer;
@@ -33,6 +36,9 @@ addAfterPageLoadedEvent(function() {
   document.body.on('click', 'a[data-type="ac_reference_input"]', function(evt, element) {
     var name = element.getAttribute('data-for');
     var target = $(name);
+    if (!target) {
+      return;
+    }
     acPopulate(target);
     mousePositionSave(evt);
     var ref = target.getAttribute('data-ref');

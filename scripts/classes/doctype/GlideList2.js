@@ -29,6 +29,7 @@ var GlideList2 = Class.create(GwtObservable, {
     this.totalRows = 0;
     this.grandTotalRows = 0;
     this.submitValues = {};
+    this.doNotSubmitParams = {};
     this.fields = "";
     this.tableName = tableName;
     this.table = null;
@@ -167,7 +168,7 @@ var GlideList2 = Class.create(GwtObservable, {
     if (this.isHierarchical())
       GwtListEditor.forPage._prepareTable(this.table, "click");
     CustomEvent.observe('list.select_row', function(payload) {
-      var sysId = payload.sys_id;
+      var sysId = payload.sys_Id;
       var table = payload.table;
       this._highlightSelectedRow(table, sysId);
     }.bind(this));
@@ -550,7 +551,7 @@ var GlideList2 = Class.create(GwtObservable, {
     this.properties = properties;
   },
   getReferringURL: function() {
-    return this.referringURL;
+    return this.referringURL || (window.location.pathname + window.location.search);
   },
   setReferringURL: function(url) {
     this.referringURL = url;
@@ -794,10 +795,13 @@ var GlideList2 = Class.create(GwtObservable, {
     var img = $(id);
     if (!img)
       return;
-    if (show)
+    if (show) {
       img.src = "images/list_v2_heir_reveal.gifx";
-    else
+      img.className = img.className.replace(/\bcollapsedGroup\b/, '');
+    } else {
       img.src = "images/list_v2_heir_hide.gifx";
+      img.className += " collapsedGroup";
+    }
     if (show) {
       img.removeClassName('icon-vcr-right');
       img.addClassName('icon-vcr-down');
@@ -896,6 +900,7 @@ var GlideList2 = Class.create(GwtObservable, {
       this.addToForm('sys_action', actionId);
     else
       this.addToForm('sys_action', actionName);
+    this.doNotSubmitParams['sysparm_record_scope'] = actionName == 'sysverb_new';
     if (ids != null)
       this.addToForm('sysparm_checked_items', ids);
     else
@@ -948,8 +953,11 @@ var GlideList2 = Class.create(GwtObservable, {
     return false;
   },
   _submitForm: function(method) {
-    for (var n in this.submitValues)
+    for (var n in this.submitValues) {
+      if (this.doNotSubmitParams[n])
+        continue;
       this.addToForm(n, this.submitValues[n]);
+    }
     for (var n in this.formElements) {
       var v = this.formElements[n];
       if (!v)

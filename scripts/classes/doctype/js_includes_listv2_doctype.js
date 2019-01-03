@@ -30,6 +30,7 @@ var GlideList2 = Class.create(GwtObservable, {
     this.totalRows = 0;
     this.grandTotalRows = 0;
     this.submitValues = {};
+    this.doNotSubmitParams = {};
     this.fields = "";
     this.tableName = tableName;
     this.table = null;
@@ -168,7 +169,7 @@ var GlideList2 = Class.create(GwtObservable, {
     if (this.isHierarchical())
       GwtListEditor.forPage._prepareTable(this.table, "click");
     CustomEvent.observe('list.select_row', function(payload) {
-      var sysId = payload.sys_id;
+      var sysId = payload.sys_Id;
       var table = payload.table;
       this._highlightSelectedRow(table, sysId);
     }.bind(this));
@@ -551,7 +552,7 @@ var GlideList2 = Class.create(GwtObservable, {
     this.properties = properties;
   },
   getReferringURL: function() {
-    return this.referringURL;
+    return this.referringURL || (window.location.pathname + window.location.search);
   },
   setReferringURL: function(url) {
     this.referringURL = url;
@@ -795,10 +796,13 @@ var GlideList2 = Class.create(GwtObservable, {
     var img = $(id);
     if (!img)
       return;
-    if (show)
+    if (show) {
       img.src = "images/list_v2_heir_reveal.gifx";
-    else
+      img.className = img.className.replace(/\bcollapsedGroup\b/, '');
+    } else {
       img.src = "images/list_v2_heir_hide.gifx";
+      img.className += " collapsedGroup";
+    }
     if (show) {
       img.removeClassName('icon-vcr-right');
       img.addClassName('icon-vcr-down');
@@ -897,6 +901,7 @@ var GlideList2 = Class.create(GwtObservable, {
       this.addToForm('sys_action', actionId);
     else
       this.addToForm('sys_action', actionName);
+    this.doNotSubmitParams['sysparm_record_scope'] = actionName == 'sysverb_new';
     if (ids != null)
       this.addToForm('sysparm_checked_items', ids);
     else
@@ -949,8 +954,11 @@ var GlideList2 = Class.create(GwtObservable, {
     return false;
   },
   _submitForm: function(method) {
-    for (var n in this.submitValues)
+    for (var n in this.submitValues) {
+      if (this.doNotSubmitParams[n])
+        continue;
       this.addToForm(n, this.submitValues[n]);
+    }
     for (var n in this.formElements) {
       var v = this.formElements[n];
       if (!v)
@@ -1669,12 +1677,14 @@ GlideListWidget.prototype = {
     CustomEvent.observe('partial.page.reload', this.refreshPartial.bind(this));
   },
   refresh: function(listTable, list) {
+    if (!list || !list.listID)
+      return;
     if (list.listID != this.listID)
       return;
     this._refresh(listTable, list, true);
   },
   refreshPartial: function(listTable, list) {
-    if (!list)
+    if (!list || !list.listID)
       return;
     if (list.listID != this.listID)
       return;
@@ -2143,6 +2153,7 @@ function glideList2InitEvents() {
       var input = $j(e.target).parent()[0].querySelector('input');
       input.checked = !input.checked;
       GlideList2.get(input.getAttribute('data-list_id')).rowChecked(input, e);
+      $j(input).change();
     });
   } else {
     document.body.on('click', 'input[data-type="list2_checkbox"], label[data-type="list2_checkbox"]', function(evt, element) {
@@ -2155,6 +2166,11 @@ function glideList2InitEvents() {
     evt.stopPropagation();
   });
   document.body.on('click', 'a[data-type="list2_group_toggle"]', function(evt, element) {
+    var toggleIcon = element.childNodes[0];
+    if (toggleIcon && toggleIcon.className.indexOf('collapsedGroup') > -1)
+      toggleIcon.className = toggleIcon.className.replace(/\bcollapsedGroup\b/, '');
+    else
+      toggleIcon.className += 'collapsedGroup';
     GlideList2.get(element.getAttribute('data-list_id')).toggleGroups();
     evt.stop();
   });
@@ -2458,7 +2474,7 @@ CustomEvent.observe('list2_init', function(list2) {
           if (curCol > numColsSticky) {
             $j(this).remove();
           }
-        })
+        });
         curCol = 0;
       });
       $cloneTableColumns.css({
@@ -2476,12 +2492,10 @@ CustomEvent.observe('list2_init', function(list2) {
     }
     var scrollLeft = $j(document).scrollLeft();
     var margin = parseInt($j("body").css('margin-left'));
-    var navHeader = $j('nav.list_nav_top.list_nav');
-    var topBorder = parseInt(navHeader.css('borderTopWidth'), 10);
-    var botBorder = parseInt(navHeader.css('borderBottomWidth'), 10);
-    var scrollTop = $j(window).scrollTop() + (navHeader.outerHeight() - navHeader.height() + topBorder + botBorder);
+    var listHeaderSpacerHeight = $j('.list_nav_spacer').offset().top;
+    var scrollTop = $j(window).scrollTop();
     var offset = $table.offset();
-    var breadcrumbOffset = $j('.breadcrumb_container').height();
+    var tableTop = offset.top - listHeaderSpacerHeight;
     if (g_text_direction == "rtl") {
       $cloneTable.css({
         "right": margin + scrollLeft
@@ -2503,7 +2517,7 @@ CustomEvent.observe('list2_init', function(list2) {
         $columnHeaders.css("left", 0);
       }
     }
-    if ((scrollTop > offset.top - breadcrumbOffset) && (offset.top - breadcrumbOffset + $table.height() > scrollTop)) {
+    if ((scrollTop > tableTop)) {
       $cloneTable.css('display', 'block');
       if (enableStickyColumns) {
         $columnHeaders.css('display', 'block');
@@ -3089,6 +3103,7 @@ $j(function($) {
     var table = $('table.list_table[data-list_id]');
     var listid = table.attr('data-list_id');
     var query = table.attr('query');
+    query = encodeURIComponent(query);
     var url = "$stream.do?sysparm_table=" + listid + "&sysparm_nostack=yes&sysparm_query=" + query;
     var target = 'parent';
     if (shouldUseFormPane())
@@ -3096,8 +3111,10 @@ $j(function($) {
     url += "&sysparm_link_target=" + target;
     createStreamReader(url);
   });
-  $('.form_stream_button').click(function() {
-    var url = "$stream.do?sysparm_table=" + g_form.getTableName() + "&sysparm_sys_id=" + g_form.getUniqueValue();
+  $(document).on('click', '.form_stream_button', function() {
+    var url = "$stream.do?sysparm_table=" + g_form.getTableName();
+    url += "&sysparm_sys_id=" + g_form.getUniqueValue();
+    url += "&sysparm_stack=no";
     createStreamReader(url);
   });
 
@@ -3114,14 +3131,24 @@ $j(function($) {
   function createStreamReader(url) {
     if ($('.list_stream_reader').length)
       return;
-    var frame = '	<iframe src="' + url + '"></iframe>';
+    var frame = '	<iframe src="' + url + '" id="list_stream_reader_frame"></iframe>';
     var $div = $('<div class="list_stream_reader">' +
       '<div class="list_stream_plank_header">' +
-      '<span class="list_stream_reader_close"><i class="icon-chevron-right"></i><i class="icon-chevron-right"></i></span><span>' + getMessage('Activity Stream') + '</span>' +
+      '<span class="list_stream_reader_close"><i class="icon-double-chevron-right"></i></span><span>' + getMessage('Activity Stream') + '</span>' +
       '</div>' +
       frame +
       '</div>');
     $('body').append($div);
+    $('#list_stream_reader_frame').bind('load', function() {
+      if (NOW.compact) {
+        $(this).contents().find('html').addClass('compact');
+      }
+      CustomEvent.observe('compact', function(newValue) {
+        var method = newValue ? 'addClass' : 'removeClass';
+        $('#list_stream_reader_frame').contents()
+          .find('html')[method]('compact');
+      })
+    });
     resizeStreamReader($div);
     $(window).bind('resize.streamreader', function() {
       unfreezeTableWidth();
@@ -3181,72 +3208,7 @@ $j(function($) {
     })
   }
 });;
-/*! RESOURCE: /scripts/doctype/splitList.js */
-$j(function($) {
-  "use strict";
-  window.SplitList = {
-    init: function(table, sys_id, view) {
-      var tables = Object.keys(GlideLists2);
-      if (tables.length > 1)
-        return null;
-      var list = GlideList2.get(tables[0])
-      var tableData = this._getTableData(list);
-      if (!tableData)
-        return;
-      window.g_splitlist = {
-        label: $j('.list_title').first().text(),
-        hasNew: $j('#sysverb_new').length > 0,
-        newLabel: $j('#sysverb_new').first().text(),
-        table: table,
-        initRecord: sys_id,
-        view: view,
-        list: list,
-        data: tableData
-      };
-      ScriptLoader.getScripts('scripts/classes/doctype/app.splitList/js_includes_splitlist.js', function() {
-        var listEl = $('<sn-splitlist/>');
-        listEl.appendTo('body');
-        angular.bootstrap(listEl, ['sn.splitList']);
-      })
-      var self = this;
-      CustomEvent.observe('partial.page.reload', function(table, list) {
-        if (!window.g_splitlist)
-          return;
-        var newData = self._getTableData(list);
-        CustomEvent.fire('splitlist.new_data', newData);
-      })
-    },
-    _getTableData: function(list) {
-      var listContainer = list.getContainer();
-      var listData = [];
-      $('tbody tr.list_row[sys_id]:not(.list_unsaved)', listContainer).each(function(index, el) {
-        var $el = $(el);
-        var sys_id = $el.attr('sys_id');
-        var titleValue = $el.attr('data-title-value');
-        var firstColumn = $el.find('td:not(.list_decoration_cell)').first().text();
-        if (firstColumn == titleValue)
-          firstColumn = "";
-        var rowData = {
-          title_value: titleValue,
-          first_column: firstColumn,
-          updated_on: $el.attr('data-updated-on')
-        };
-        var decorations = $el.find('.list2_cell_background').first();
-        listData.push({
-          decoration_color: decorations.css('background-color'),
-          sys_id: sys_id,
-          data: rowData
-        })
-      });
-      return listData;
-    },
-    destroy: function() {
-      $('sn-splitlist').remove();
-    }
-  }
-  CustomEvent.observe('splitlist.destroy', SplitList.destroy);
-});
-/*! RESOURCE: /scripts/sn.messaging/NOW.messaging.js */
+/*! RESOURCE: /scripts/sn/common/messaging/deprecated/NOW.messaging.js */
 (function(global) {
   "use strict";
   global.NOW = global.NOW || {};
@@ -3407,7 +3369,7 @@ $j(function($) {
   global.NOW.MessageBus =
     messaging.snCustomEventAdapter(CustomEvent, messaging.snTopicRegistrar(), messaging.snDate(), messaging.snUuid());
 })(this);;
-/*! RESOURCE: /scripts/sn.messaging/NOW.messaging.record.js */
+/*! RESOURCE: /scripts/sn/common/messaging/deprecated/NOW.messaging.record.js */
 (function(global) {
   "use strict";
   if (typeof global.NOW === 'undefined' || typeof global.NOW.messaging === 'undefined') {

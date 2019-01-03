@@ -161,7 +161,7 @@ var GwtGridEdit = Class.create({
         return false;
       }
       this.rec = rec;
-      this.col = 1;
+      this.col = isDoctype() ? 2 : 1;
     } else
       this.col++;
     this._updateCursorCell();
@@ -171,12 +171,15 @@ var GwtGridEdit = Class.create({
     this.clearSelected();
     if (this.rec == 1 && this.col == 1)
       return false;
-    if (this.col == 1) {
+    if (isDoctype() && this.rec == 1 && this.col == 2)
+      return false;
+    if (this.col == 1 || (isDoctype() && this.col == 2)) {
       var rec = this.tableController.getPrevRowByPos(this.rec);
+      var maxCol = this._getMaxCol();
       if (!rec)
         return false;
       this.rec = rec;
-      this.col = this._getMaxCol() - 1;
+      this.col = isDoctype() ? maxCol - 2 : maxCol - 1;
     } else
       this.col--;
     this._updateCursorCell();
@@ -262,6 +265,8 @@ var GwtGridEdit = Class.create({
       parent.scrollLeft = eViewOffset.left - 44;
     else if (eViewOffset.right > parent.scrollLeft + vp.width)
       parent.scrollLeft = eViewOffset.right - vp.width + relatedListOffset;
+    if (isDoctype() && this.col == 2)
+      parent.scrollLeft = 0;
     if (e.getHeight() >= vp.height)
       parent.scrollTop = eViewOffset.top;
     else if (eVP.top < (vp.top + 24))

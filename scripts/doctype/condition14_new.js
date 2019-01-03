@@ -159,8 +159,11 @@ function _createFilterSelect(width, multi, size) {
   s.title = getMessage("Choose Input");
   if (width)
     s.style.width = width + "px";
-  if (multi)
+  if (multi) {
     s.multiple = true;
+  } else {
+    s.className = s.className + ' select2';
+  }
   s.style.verticalAlign = "top";
   s.className += " form-control";
   return s;
@@ -215,6 +218,9 @@ function updateFields(name, select, fOper, fValue, includeExtended, filterClass)
   o.style.color = 'green';
   o.wasSelected = 'true';
   $(select).addClassName('filter_type');
+  var $select = $j(select);
+  if (!$select.data('select2'))
+    $select.select2();
   buildFieldsPerType(name, tr, fieldName, fOper, fValue, includeExtended, tableNameFull, filterClass);
 }
 
@@ -231,7 +237,7 @@ function getFullLabel(option) {
   return option.fullLabel || "";
 }
 
-function addOperators(td, type, dValue, isChoice, includeExtended, showDynamicReferenceOperator, filterClass) {
+function addOperators(td, type, dValue, isChoice, includeExtended, showDynamicReferenceOperator, filterClass, restrictI18NOpers) {
   var msg = NOW.msg;
   var s = _createFilterSelect("150");
   s.title = 'choose operator';
@@ -241,6 +247,9 @@ function addOperators(td, type, dValue, isChoice, includeExtended, showDynamicRe
   var opers;
   if (isChoice)
     opers = sysopers[type + "_choice"];
+  var translated = type == 'translated_field' || type == 'translated_html' || type == 'translated_text';
+  if (!opers && translated && restrictI18NOpers)
+    opers = sysopers['translated_basic'];
   if (!opers && sysopers[type])
     opers = sysopers[type];
   if (type && type.indexOf(':') > 0) {
@@ -248,9 +257,6 @@ function addOperators(td, type, dValue, isChoice, includeExtended, showDynamicRe
     if (null != complexTypeArray[0])
       opers = sysopers[complexTypeArray[0]];
   }
-  var translated = type == 'translated_field' || type == 'translated_html' || type == 'translated_text';
-  if (translated == true && (g_lang != 'en' || g_system_lang != 'en'))
-    opers = sysopers['cons_translated'];
   if (!opers)
     opers = sysopers['default'];
   if (noOps)
@@ -323,6 +329,7 @@ function addTextInput(td, dValue, type) {
   input.title = 'input value';
   if (useTextareas) {
     input.style.width = "80%";
+    input.style.resize = "vertical";
     input.maxlength = 80;
   }
   input.style.verticalAlign = "top";
@@ -592,6 +599,8 @@ function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includ
   var type;
   var multi;
   var isChoice;
+  var restrictI18NOpers;
+  var usingEnglish = g_lang == 'en';
   var elementDef = tableDef.getElement(descriptorName);
   var msg = NOW.msg;
   if (elementDef == null) {
@@ -611,9 +620,12 @@ function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includ
     type = elementDef.getType();
     multi = elementDef.getMulti();
     isChoice = elementDef.isChoice();
-    if (!elementDef.getBooleanAttribute("canmatch"))
+    restrictI18NOpers = !usingEnglish && !elementDef.canSortI18N();
+    if (!elementDef.getBooleanAttribute("canmatch")) {
       if (type != "variables" && type != "related_tags")
         type = "string_clob";
+    } else if (elementDef.isEdgeEncrypted())
+      type = elementDef.canSort() ? "edgeEncryptionOrder" : "edgeEncryptionEq";
   }
   var tdField = tr.tdField;
   var tdOperator = tr.tdOper;
@@ -648,11 +660,25 @@ function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includ
       fOper = "SINCE";
   }
   var showDynamicReferenceOperator = NOW.c14.shouldShowDynamicReferenceOperator(type, elementDef, tableNameFull);
-  var operSel = addOperators(tdOperator, type, fOper, isChoice,
-    includeExtended, showDynamicReferenceOperator, filterClass);
+  var operSel = addOperators(tdOperator, type, fOper, isChoice, includeExtended,
+    showDynamicReferenceOperator, filterClass, restrictI18NOpers);
+  if (operSel) {
+    operSel.observe('change', function(e) {
+      var form = operSel.up('form');
+      if (form) {
+        var nameWithoutTablePrefix = tableNameFull.substring(tableNameFull.indexOf(".") + 1);
+        form.fire("glideform:onchange", {
+          id: nameWithoutTablePrefix,
+          value: unescape(getFilter(tableNameFull)),
+          modified: true
+        });
+      }
+    });
+  }
   tr.operSel = operSel;
   if (fOper == null && operSel)
     fOper = tdOperator.currentOper;
+  tr.setAttribute("type", type);
   if ((type == "boolean") || (type == 'string_boolean')) {
     tr.handler = new GlideFilterChoice(tableName, elementDef);
     var keys = [];
@@ -697,13 +723,13 @@ function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includ
   } else if (type == 'integer')
     tr.handler = new GlideFilterNumber(tableName, elementDef);
   else if (type == 'currency' || type == 'price')
-    tr.handler = new GlideFilterCurrency(tableName, elementDef)
+    tr.handler = new GlideFilterCurrency(tableName, elementDef);
   else {
     tr.handler = new GlideFilterString(tableName, elementDef);
     tr.handler.setOriginalTable(tableNameFull);
   }
   if (tr.handler) {
-    tr.handler.setFilterClass(filterClass)
+    tr.handler.setFilterClass(filterClass);
     tr.handler.create(tr, fValue);
   }
 }
@@ -931,7 +957,7 @@ function addFields(tableName, fValue, isSort, extendedFields) {
 }
 
 function sortByFilter(item) {
-  return item.canSort();
+  return item.canSort() && (g_lang == 'en' || item.canSortI18N());
 }
 
 function updateSortFields(name, select) {
@@ -965,6 +991,7 @@ function updateSortFields(name, select) {
   o.style.color = 'green';
   o.wasSelected = 'true';
   $(select).addClassName('filter_type');
+  $j(select).select2();
 }
 
 function addCondition(name) {

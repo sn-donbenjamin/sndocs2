@@ -9,12 +9,14 @@ GlideListWidget.prototype = {
     CustomEvent.observe('partial.page.reload', this.refreshPartial.bind(this));
   },
   refresh: function(listTable, list) {
+    if (!list || !list.listID)
+      return;
     if (list.listID != this.listID)
       return;
     this._refresh(listTable, list, true);
   },
   refreshPartial: function(listTable, list) {
-    if (!list)
+    if (!list || !list.listID)
       return;
     if (list.listID != this.listID)
       return;

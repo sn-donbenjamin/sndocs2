@@ -1414,9 +1414,40 @@ function($) {
         if (!jQuery.event.triggered)
           Element.hide(this);
       }
+      this.show = function() {
+        if (!jQuery.event.triggered)
+          Element.show(this);
+      }
       return this;
     })
   }
+})(jQuery);;
+/*! RESOURCE: /scripts/heisenberg/custom/collapse.js */
+(function($) {
+  "use strict";
+  var bsCollapse = $.fn.collapse;
+  $.fn.collapse = function(options) {
+    var $this = this;
+    $this.hideFix();
+    return bsCollapse.call($this, options);
+  };
+  $(document).on('click.bs.collapse.data-api', '[data-sn-toggle="collapse"]', function(e) {
+    var href
+    var $this = $(this)
+    var target = $this.attr('data-target') ||
+      e.preventDefault() ||
+      (href = $this.attr('href')) && href.replace(/.*(?=#[^\s]+$)/, '')
+    var $target = $(target)
+    var data = $target.data('bs.collapse')
+    var option = data ? 'toggle' : $this.data()
+    var parent = $this.attr('data-parent')
+    var $parent = parent && $(parent)
+    if (!data || !data.transitioning) {
+      if ($parent) $parent.find('[data-toggle="collapse"][data-parent="' + parent + '"]').not($this).addClass('collapsed')
+      $this[$target.hasClass('in') ? 'addClass' : 'removeClass']('collapsed')
+    }
+    $.fn.collapse.call($target, option)
+  });
 })(jQuery);;
 /*! RESOURCE: /scripts/heisenberg/custom/modals.js */
 jQuery(function($) {
@@ -1442,13 +1473,11 @@ jQuery(function($) {
     this.$element.css('z-index', (~~zmodal) + (10 * modalCount));
     $backdrop.css('z-index', (~~zbackdrop) + (10 * modalCount));
     $backdrop.addClass('stacked');
-    if (isMobileSafari()) {
-      $backdrop.css('display', 'none');
-    }
     forceRedraw(this.$element[0]);
   };
-  bsModal.prototype.hide = function() {
+  bsModal.prototype.hide = function(e) {
     bsModalHide.apply(this, arguments);
+    if (this.isShown) return;
     modalCount--;
     this.$element.css('z-index', '');
     forceRedraw(this.$element[0]);
@@ -1463,6 +1492,11 @@ jQuery(function($) {
   "use strict";
   var bsTooltip = $.fn.tooltip.Constructor;
   bsTooltip.DEFAULTS.placement = 'auto';
+  bsTooltip.DEFAULTS.delay = {
+    'show': 500,
+    'hide': 100
+  };
+  bsTooltip.DEFAULTS.trigger = 'hover';
   $(function() {
     if ('ontouchstart' in document.documentElement)
       return;
@@ -1472,12 +1506,7 @@ jQuery(function($) {
       var $this = $(this);
       if (!$this.data('bs.tooltip')) {
         $this.tooltip({
-          delay: {
-            'show': 500,
-            'hide': 100
-          },
-          container: $this.attr('data-container') || 'body',
-          trigger: 'hover'
+          container: $this.attr('data-container') || 'body'
         });
         $this.hideFix();
         $this.on('click focus', function() {
@@ -1622,7 +1651,8 @@ jQuery(function($) {
       debounce(hideOpenPopovers, 0, true);
       debounce(resetContainer);
     });
-    $('html').on('click', function(e) {
+
+    function closeOnBlur(e) {
       function eventTargetInElement(elem) {
         return elem.is(e.target) || elem.has(e.target).length !== 0
       }
@@ -1637,7 +1667,15 @@ jQuery(function($) {
           return;
         $popoverButton.popover('hide');
       });
+    };
+    $('html').on('click', function(e) {
+      closeOnBlur(e);
     });
+    if (CustomEvent && CustomEvent.observe) {
+      CustomEvent.observe('body_clicked', function(e) {
+        closeOnBlur(e);
+      });
+    }
   });
   $(document).on('show.bs.popover hide.bs.popover', function() {
     if (window._frameChanged)

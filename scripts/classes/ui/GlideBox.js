@@ -470,8 +470,7 @@ var GlideBox = Class.create({
         display: 'block',
         visibility: 'hidden'
       });
-      if (Prototype.Browser.WebKit)
-        clone.innerHTML = clone.innerHTML;
+      clone.innerHTML = clone.innerHTML;
       document.body.appendChild(clone);
       var cloneBody = clone.select('.gb_body:first')[0];
       var diff = clone.measure('border-box-width') - cloneBody.measure('border-box-width');
