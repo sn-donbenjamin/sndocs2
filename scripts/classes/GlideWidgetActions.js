@@ -42,7 +42,10 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
           opt.disabled = true;
         } else if (validIds.length == sysIds.length) {
           opt.disabled = false;
-          opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+          if (opt.getAttribute("action_name"))
+            opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+          else
+            opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
           opt.setAttribute('gsft_allow', '');
         } else {
           opt.disabled = false;
@@ -78,7 +81,10 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
   _checkAction: function(opt, sysIds) {
     if (sysIds.length == 0) {
       opt.disabled = true;
-      opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+      if (opt.getAttribute("action_name"))
+        opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+      else
+        opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
       opt.style.color = '#777';
       return false;
     }

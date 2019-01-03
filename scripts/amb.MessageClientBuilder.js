@@ -7,10 +7,12 @@
   function getClient() {
     var _window = window.self;
     try {
-      while (_window != _window.parent) {
-        if (_window.g_ambClient)
-          break;
-        _window = _window.parent;
+      if (!(window.MSInputMethodContext && document.documentMode)) {
+        while (_window != _window.parent) {
+          if (_window.g_ambClient)
+            break;
+          _window = _window.parent;
+        }
       }
       if (_window.g_ambClient)
         return _window.g_ambClient;
