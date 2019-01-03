@@ -1,5 +1,3 @@
-[![pipeline status](https://gitlab.com/jacebenson/sndocs/badges/master/pipeline.svg)](https://gitlab.com/jacebenson/sndocs/commits/master)
-
 # SNDocs
 
 Downloads scripts and make HTML pages for them.
@@ -24,6 +22,12 @@ npm run build #builds a updated html file based on data.json
 ```bash
 npm run test # loads up /public to localhost:8000
 ```
+
+## Helpful links;
+
+### Comparing two versions;
+
+https://github.com/jacebenson/sndocs2/compare/fuji-patch-13...geneva-patch-11
 
 ## License
 
