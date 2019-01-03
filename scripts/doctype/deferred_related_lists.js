@@ -62,7 +62,8 @@ $j(function($) {
     if (!list) {
       return;
     }
-    if (list.getReferringURL().indexOf('list2_deferred_related_lists.do') != -1)
+    if (list.getReferringURL().indexOf('list2_deferred_related_lists.do') != -1 ||
+      list.getReferringURL() == 'undefined')
       list.setReferringURL(window.location.pathname + window.location.search);
   });
 

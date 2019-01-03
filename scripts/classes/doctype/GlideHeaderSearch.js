@@ -1,6 +1,9 @@
 /*! RESOURCE: /scripts/classes/doctype/GlideHeaderSearch.js */
 $j(function($) {
   'use strict';
+  if (window.NOW.headerSearchLoaded)
+    return;
+  window.NOW.headerSearchLoaded = true;
   var keyEvents = isMSIE9 || isMSIE10 ? "keydown" : "keyup"
   $(document).on(keyEvents, "INPUT.list_header_search", function(evt) {
     $(this).addClass('modified');

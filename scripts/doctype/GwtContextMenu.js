@@ -365,7 +365,8 @@ var GwtContextMenu = Class.create({
   moveMenuToParent: function(e, firingObject) {
     var parent = this.getParent().getMenu();
     var offsetTop = grabOffsetTop(firingObject) - parent.scrollTop;
-    var offsetLeft = grabOffsetLeft(parent);
+    var borderLeftWidth = parseInt($j(this.getParent().getMenu()).css('border-right-width'), 10);
+    var offsetLeft = grabOffsetLeft(parent) - borderLeftWidth;
     this.moveMenu(offsetTop, offsetLeft, firingObject.offsetHeight, parent.offsetWidth, offsetTop, offsetLeft);
   },
   moveMenu: function(top, left, height, width, offsetTop, offsetLeft) {
@@ -657,7 +658,10 @@ function contextShow(e, tableName, timeoutValue, ttop, lleft, rright) {
     contextMenu.setProperty('top', ttop);
     contextMenu.setProperty('left', lleft);
     contextMenu.setProperty('right', rright);
-    contextMenu.display(e);
+    if (contextMenu.menu.style.display == "block")
+      contextMenu.menu.style.display = "none";
+    else
+      contextMenu.display(e);
     if (contextMenu.onshow)
       contextMenu.onshow();
   }

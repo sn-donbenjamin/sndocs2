@@ -9,6 +9,12 @@
       }
       window.location.href = url;
     },
+    openList: function(table, query) {
+      var url = table + '_list.do';
+      if (query)
+        url += "?sysparm_query=" + encodeURIComponent(query);
+      this.open(url);
+    },
     openRecord: function(table, sys_id) {
       var url = table + '.do?sys_id=' + sys_id;
       this.open(url);
@@ -19,6 +25,9 @@
     },
     refreshNavigator: function() {
       CustomEvent.fireTop('navigator.refresh');
+    },
+    getURL: function() {
+      return window.location.href;
     },
     openPopup: function(url, name, features, noStack) {
       if (noStack === true && url.indexOf("sysparm_nameofstack") == -1)

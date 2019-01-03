@@ -284,88 +284,38 @@ GlideListEditor.RowUpdater = Class.create(
     }
   });
 GlideListEditor.XmlSerializingReceiver = Class.create(
-  GwtListEditorPendingChanges.ChangeReceiver, {
-    initialize: function($super, doc, dst, selector) {
-      $super();
-      this.doc = doc;
-      this.dst = dst;
-      this.selector = selector;
-      this.record = null;
-    },
-    beginRecord: function(sysID, op) {
-      if (!this.selector.isSelected(sysID, op))
-        return;
-      var record = this._createElement("record");
-      record.setAttribute("sys_id", sysID);
-      record.setAttribute("operation", op);
-      this.record = record;
-      return true;
-    },
-    endRecord: function(sysID) {
-      if (this.record)
-        this.dst.appendChild(this.record);
-      this.record = null;
-    },
-    changedField: function(sysID, info) {
-      var node = this._createElement("field");
-      this._populateFieldNode(node, info);
-      this.record.appendChild(node);
-    },
-    _populateFieldNode: function(node, info) {
-      node.setAttribute('name', info.getName());
-      node.setAttribute('modified', info.isModified().toString());
-      node.setAttribute('value_set', info.isValueSet().toString());
-      node.setAttribute('dsp_set', info.isDisplayValueSet().toString());
-      this._appendValueNode(node, 'value', info.value);
-      if (info.displaySet)
-        this._appendValueNode(node, 'display_value', info.displayValue);
-    },
-    _createElement: function(name) {
-      return this.doc.createElement(name);
-    },
-    _createTextNode: function(value) {
-      return this.doc.createTextNode(value);
-    },
-    _appendValueNode: function(dst, name, value) {
-      if (!value)
-        value = '';
-      var node = this._createElement(name);
-      var text = this._createTextNode(value);
-      node.appendChild(text);
-      dst.appendChild(node);
-    },
-    toString: function() {
-      return 'GlideListEditor.XmlSerializingReceiver';
-    }
-  });
-GlideListEditor.ChangeCounter = Class.create(
-  GwtListEditorPendingChanges.RecordReceiver, {
-    initialize: function(selector) {
-      this.selector = selector;
-      this.changeCount = 0;
-    },
-    changedRecord: function(sysID, record) {
-      if (this.selector.isSelected(sysID, record.operation))
-        this.changeCount++;
-    },
-    isDone: function() {
-      return this.changeCount > 0;
-    },
-    toString: function() {
-      return 'GlideListEditor.ChangeCounter';
-    }
-  });
-GlideListEditor.IsModifiedRecordSelector = Class.create({
-  initialize: function(changes) {
-    this.changes = changes;
-  },
-  isSelected: function(sysID, op) {
-    if (("add" === op) || ("delete" === op) || ("delete_pending" === op) || ("add_existing" === op))
-      return true;
-    var record = this.changes.get(sysID);
-    return record.isModified();
-  },
-  toString: function() {
-    return 'GlideListEditor.IsModifiedRecordSelector';
-  }
-});;
+    GwtListEditorPendingChanges.ChangeReceiver, {
+      initialize: function($super, doc, dst, selector) {
+        $super();
+        this.doc = doc;
+        this.dst = dst;
+        this.selector = selector;
+        this.record = null;
+      },
+      beginRecord: function(sysID, op) {
+        if (!this.selector.isSelected(sysID, op))
+          return;
+        var record = this._createElement("record");
+        record.setAttribute("sys_id", sysID);
+        record.setAttribute("operation", op);
+        this.record = record;
+        return true;
+      },
+      endRecord: function(sysID) {
+        if (this.record)
+          this.dst.appendChild(this.record);
+        this.record = null;
+      },
+      changedField: function(sysID, info) {
+        var node = this._createElement("field");
+        this._populateFieldNode(node, info);
+        this.record.appendChild(node);
+      },
+      _populateFieldNode: function(node, info) {
+          node.setAttribute('name', info.getName());
+          node.setAttribute('modified', info.isModified().toString());
+          node.setAttribute('value_set', info.isValueSet().toString());
+          node.setAttribute('dsp_set', info.isDisplayValueSet().toString());
+          this._appendValueNode(node, 'value', info.value);
+          if (info.displaySet)
+            this._appendValueNode(node, 'dis

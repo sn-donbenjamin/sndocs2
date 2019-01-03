@@ -2,17 +2,25 @@
 $j(function($) {
   "use strict";
   var closeButtonPadding = 32;
+  var isOpen = false;
   $('.list_stream_button').click(function() {
-    var table = $('table.list_table[data-list_id]');
-    var listid = table.attr('data-list_id');
-    var query = table.attr('query');
-    query = encodeURIComponent(query);
-    var url = "$stream.do?sysparm_table=" + listid + "&sysparm_nostack=yes&sysparm_query=" + query;
-    var target = 'parent';
-    if (shouldUseFormPane())
-      target = 'form_pane';
-    url += "&sysparm_link_target=" + target;
-    createStreamReader(url);
+    if (!isOpen) {
+      isOpen = true;
+      var table = $('table.list_table[data-list_id]');
+      var listid = table.attr('data-list_id');
+      var query = table.attr('query');
+      query = encodeURIComponent(query);
+      var url = "$stream.do?sysparm_table=" + listid + "&sysparm_nostack=yes&sysparm_query=" + query;
+      var target = 'parent';
+      if (shouldUseFormPane())
+        target = 'form_pane';
+      url += "&sysparm_link_target=" + target;
+      createStreamReader(url);
+    } else {
+      isOpen = false;
+      var $readerDiv = $('.list_stream_reader');
+      closeStreamReader($readerDiv);
+    }
   });
   $(document).on('click', '.form_stream_button', function() {
     var url = "$stream.do?sysparm_table=" + g_form.getTableName();
@@ -83,6 +91,7 @@ $j(function($) {
     }
   }
   $('body').on('click', '.list_stream_reader_close', function() {
+    isOpen = false;
     var $readerDiv = $(this).closest('.list_stream_reader');
     closeStreamReader($readerDiv);
   });
