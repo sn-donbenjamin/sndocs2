@@ -64,7 +64,8 @@ var PersonalizeForm = Class.create({
   hideSidebar: function() {
     this.$toggleButton.removeClass("icon-cog-selected").addClass("icon-cog");
     this.$toggleButton.popover('hide');
-    this.$fieldLabelHideButtons.hide();
+    if (this.$fieldLabelHideButtons != null)
+      this.$fieldLabelHideButtons.hide();
     this.isOpen = false;
   },
   showSidebar: function() {
@@ -72,20 +73,22 @@ var PersonalizeForm = Class.create({
     this.$toggleButton.popover('show');
     this.$container.parent().parent().find('h3.popover-title').hide();
     this.setPopoverHeight();
-    this.$fieldLabelHideButtons.show();
+    if (this.$fieldLabelHideButtons != null)
+      this.$fieldLabelHideButtons.show();
     if (g_form.personalizeHiddenFields.length) {
       $j(".personalize_form_preference_reset").show().click(function(e) {
         g_form.resetPersonalizeHiddenFields();
         e.preventDefault();
       });
     }
-    this.$fields.change(this, function(event) {
-      var fieldName = $j(this).attr('name');
-      var display = $j(this).prop('checked');
-      g_form.setUserDisplay(fieldName, display);
-      event.preventDefault();
-      event.stopPropagation();
-    });
+    if (this.$fields != null)
+      this.$fields.change(this, function(event) {
+        var fieldName = $j(this).attr('name');
+        var display = $j(this).prop('checked');
+        g_form.setUserDisplay(fieldName, display);
+        event.preventDefault();
+        event.stopPropagation();
+      });
     this.isOpen = true;
   },
   setPopoverHeight: function() {
@@ -142,11 +145,12 @@ var PersonalizeForm = Class.create({
       }
       container.append(html);
     });
-    this.$fieldLabelHideButtons.click(function(event) {
-      $j(this).data("input").click();
-      event.preventDefault();
-      event.stopPropagation();
-    });
+    if (this.$fieldLabelHideButtons != null)
+      this.$fieldLabelHideButtons.click(function(event) {
+        $j(this).data("input").click();
+        event.preventDefault();
+        event.stopPropagation();
+      });
   },
   getFormElements: function() {
     var fieldNames = g_form.elements.sort(function(a, b) {

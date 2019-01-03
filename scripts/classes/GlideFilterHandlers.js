@@ -45,7 +45,9 @@ var GlideFilterHandler = Class.create({
     var op = this._getOperator();
     if (!values)
       this.values = [];
-    else
+    else if (this.tr && this.tr.varType === "variables" && !this.userDateFormat) {
+      this.values = [values];
+    } else
       this.values = values.split("@");
     for (var i = this.values.length; i < this.maxValues; i++)
       this.values[i] = "";

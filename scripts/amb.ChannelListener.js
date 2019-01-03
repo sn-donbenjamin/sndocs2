@@ -1,58 +1,57 @@
 /*! RESOURCE: /scripts/amb.ChannelListener.js */
-(function($) {
-  amb['ChannelListener'] = Class.create();
-  amb.ChannelListener.prototype = {
-    initialize: function(channel, serverConnection,
-      channelRedirect) {
-      this._channel = channel;
-      this._serverConnection = serverConnection;
-      this._id;
-      this._callback;
-      this._LOGGER = new amb.Logger(this.type);
-      this._channelRedirect = channelRedirect;
-      this._channelRedirectId = null;
-    },
+amb.ChannelListener = function ChannelListener(channel, serverConnection,
+  channelRedirect) {
+  var id;
+  var subscriberCallback;
+  var LOGGER = new amb.Logger('amb.ChannelListener');
+  var channelRedirectId = null;
+  var connectOpenedEventId;
+  var currentChannel = channel;
+  return {
     getCallback: function() {
-      return this._callback;
+      return subscriberCallback;
     },
     getID: function() {
-      return this._id;
+      return id;
     },
     subscribe: function(callback) {
-      this._callback = callback;
-      if (this._channelRedirect)
-        this._channelRedirectId = this._channelRedirect.subscribeToEvent(
-          this._channelRedirect.getEvents().CHANNEL_REDIRECT, this._switchToChannel.bind(this));
-      this._serverConnection.subscribeToEvent(this._serverConnection.getEvents().CONNECTION_OPENED,
+      subscriberCallback = callback;
+      if (channelRedirect)
+        channelRedirectId = channelRedirect.subscribeToEvent(
+          channelRedirect.getEvents().CHANNEL_REDIRECT, this._switchToChannel.bind(this));
+      connectOpenedEventId = serverConnection.subscribeToEvent(serverConnection.getEvents().CONNECTION_OPENED,
         this._subscribeWhenReady.bind(this));
-      this._LOGGER.debug("Subscribed to channel: " + this._channel.getName());
+      LOGGER.debug("Subscribed from channel: " + currentChannel.getName());
       return this;
+    },
+    resubscribe: function() {
+      return this.subscribe(subscriberCallback);
     },
     _switchToChannel: function(fromChannel, toChannel) {
       if (!fromChannel || !toChannel)
         return;
-      if (fromChannel.getName() != this._channel.getName())
+      if (fromChannel.getName() != currentChannel.getName())
         return;
       this.unsubscribe();
-      this._channel = toChannel;
-      this.subscribe(this._callback);
+      currentChannel = toChannel;
+      this.subscribe(subscriberCallback);
     },
     _subscribeWhenReady: function() {
-      this._LOGGER.debug("Subscribing to '" + this._channel.getName() + "'...");
-      this._id = this._channel.subscribe(this);
+      LOGGER.debug("Subscribing to '" + currentChannel.getName() + "'...");
+      id = currentChannel.subscribe(this);
     },
     unsubscribe: function() {
-      this._channelRedirect.unsubscribeToEvent(this._channelRedirectId);
-      this._channel.unsubscribe(this);
-      this._LOGGER.debug("Unsubscribed from channel: " + this._channel.getName());
+      channelRedirect.unsubscribeToEvent(channelRedirectId);
+      currentChannel.unsubscribe(this);
+      serverConnection.unsubscribeFromEvent(connectOpenedEventId);
+      LOGGER.debug("Unsubscribed from channel: " + currentChannel.getName());
       return this;
     },
-    publish: function(message, autoRequest) {
-      this._channel.publish(message, autoRequest);
+    publish: function(message) {
+      currentChannel.publish(message);
     },
     getName: function() {
-      return this._channel.getName();
-    },
-    type: 'amb.ChannelListener'
+      return currentChannel.getName();
+    }
   }
-})(jQuery);;
+};;

@@ -1,5 +1,5 @@
 /*! RESOURCE: /scripts/lib/newtag-it.js */
-(function($) {
+jQuery(function($) {
   $.widget('ui.newtagit', {
     options: {
       allowDuplicates: false,
@@ -486,4 +486,4 @@
       el.value = initialValue;
     }
   });
-})(jQuery);;
+});;

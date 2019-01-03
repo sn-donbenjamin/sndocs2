@@ -24,6 +24,9 @@
     getPreference: function(name) {
       return this.preferences[name];
     },
+    setAutoFullHeight: function(isAutoFullHeight) {
+      this.isAutoFullHeight = isAutoFullHeight;
+    },
     setSize: function(width) {
       this.size = 'modal-md';
       if (!width)
@@ -81,18 +84,69 @@
       this.setEscapedBody(xml);
       this._evalScripts(xml);
     },
+    maximizeHeight: function(callback) {
+      if (this.resizeTimeout)
+        clearTimeout(this.resizeTimeout);
+      var context = this;
+      this.resizeTimeout = setTimeout(function() {
+        var padding = 100;
+        var $modalBody = context.$modalContent.find('.modal-body');
+        var modalHeight = context.$modalContent.height();
+        var modalToolsHeight = modalHeight - $modalBody.height();
+        var newHeight = $(window).height() - padding - modalToolsHeight;
+        $modalBody.height(newHeight);
+        if (callback)
+          callback.apply(context);
+      }, 150);
+    },
     renderWithContent: function(content) {
       this._createModal();
       if (typeof content == 'string')
         $('.modal-body', this.$window)[0].innerHTML = content;
       else
         $('.modal-body', this.$window).html(content);
+      var self = this;
+      this.$window.on('show.bs.modal', function() {
+        self.isOpen = true;
+        self.$modalContent = self.$window.find('.modal-content');
+        if (self.isAutoFullHeight)
+          self.maximizeHeight();
+      }).on('hidden.bs.modal', function() {
+        self.isOpen = false;
+      });
       this.$window.modal({
         backdrop: this.readOnly || this.backdropStatic ? 'static' : undefined,
         keyboard: !this.readOnly
       });
       this.fireEvent("bodyrendered", this);
       _frameChanged();
+    },
+    renderIframe: function(url, onloadCallback) {
+      var loadingMessage = 'Loading...';
+      var div = document.createElement('div');
+      div.setAttribute('style', 'position: absolute; top: 2px; right: 2px; bottom: 2px; left: 2px;');
+      var loading = document.createElement('div');
+      loading.setAttribute('style', 'position: absolute; top: 10px; left: 10px;');
+      loading.setAttribute('class', 'loading');
+      if (loading.textContent)
+        loading.textContent = loadingMessage;
+      else
+        loading.innerText = loadingMessage;
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('style', 'width: 100%; height: 100%; border: 0; background-color: white; visibility: hidden;');
+      iframe.src = url;
+      div.appendChild(loading);
+      div.appendChild(iframe);
+      var context = this;
+      this.on('bodyrendered', function() {
+        context.$modalContent.find('iframe').load(function(evt) {
+          context.$modalContent.find('.loading').hide();
+          iframe.setAttribute('style', 'width: 100%; height: 100%; border: 0; background-color: white;');
+          if (onloadCallback && evt.target && evt.target.contentWindow)
+            onloadCallback.apply(evt.target.contentWindow);
+        });
+      });
+      this.renderWithContent(div);
     },
     _createModal: function() {
       var template;
@@ -120,6 +174,13 @@
       $(document.body).append(this.$window);
       this._watchForClose();
       this._watchHelp();
+    },
+    _onWindowResize: function(context) {
+      return function() {
+        if (context.isOpen && context.isAutoFullHeight) {
+          context.maximizeHeight();
+        }
+      }
     },
     setEscapedBody: function(body) {
       if (!body)

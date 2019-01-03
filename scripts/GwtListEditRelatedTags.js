@@ -56,7 +56,7 @@ var GwtListEditRelatedTags = Class.create(GwtListEditWindow, {
         afterTagRemoved: onTagRemoved,
         showAutocompleteOnFocus: false,
         animate: false,
-        placeholderText: "Add Tag...",
+        placeholderText: getMessage("Add Tag..."),
         table: labels.table,
         labelsListString: JSON.stringify(labels),
         autocomplete: {

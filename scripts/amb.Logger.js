@@ -1,24 +1,20 @@
 /*! RESOURCE: /scripts/amb.Logger.js */
-(function($) {
-  amb['Logger'] = Class.create();
-  amb.Logger.prototype = {
-    initialize: function(callerType) {
-      this._callerType = callerType;
-      this._debugEnabled = amb['properties']['logLevel'] == 'debug';
-    },
-    print: function(message) {
-      console.log(this._callerType + ' ' + message);
-    },
+amb['Logger'] = function(callerType) {
+  var _debugEnabled = amb['properties']['logLevel'] == 'debug';
+
+  function print(message) {
+    console.log(callerType + ' ' + message);
+  }
+  return {
     debug: function(message) {
-      if (this._debugEnabled)
-        this.print('[DEBUG] ' + message);
+      if (_debugEnabled)
+        print('[DEBUG] ' + message);
     },
     addInfoMessage: function(message) {
-      this.print('[INFO] ' + message);
+      print('[INFO] ' + message);
     },
     addErrorMessage: function(message) {
-      this.print('[ERROR] ' + message);
-    },
-    type: 'amb.Logger'
+      print('[ERROR] ' + message);
+    }
   }
-})(jQuery);;
+};;

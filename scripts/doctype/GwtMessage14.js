@@ -186,10 +186,19 @@ var GwtMessage = Class.create({
 });
 GwtMessage._messages = {};
 
-function getMessage(msg) {
-  if (typeof msg == "object")
-    return new GwtMessage().getMessages(msg);
-  return new GwtMessage().getMessage(msg);
+function getMessage(msg, callback) {
+  if (typeof callback == "function") {
+    if (typeof msg == "object")
+      new GwtMessage().fetch(msg, callback);
+    else
+      new GwtMessage().fetch([msg], function(o) {
+        callback(o[msg]);
+      });
+  } else {
+    if (typeof msg == "object")
+      return new GwtMessage().getMessages(msg);
+    return new GwtMessage().getMessage(msg);
+  }
 }
 
 function getMessages(msgs) {

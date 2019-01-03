@@ -141,7 +141,7 @@ var GlideList2 = Class.create(GwtObservable, {
     return window.self.frameElement;
   },
   _stripFieldName: function(fieldName) {
-    if (fieldName.startsWith(this.tableName + '.'))
+    if (fieldName && fieldName.startsWith(this.tableName + '.'))
       return fieldName.substring(this.tableName.length + 1);
     return fieldName;
   },
