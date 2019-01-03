@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/ac.js */
 var g_isInternetExplorer = isMSIE;
 var KEY_RETURN = 3;
 var KEY_BACKSPACE = 8;
@@ -15,7 +16,7 @@ var KEY_INSERT = 45;
 var KEY_DELETE = 46;
 var NO_INVISIBLE = 0;
 var itemHeight = 16;
-var ctimeVal;
+var ctimeVal = {};
 var TAG_DIV = "div";
 var TAG_SPAN = "span";
 var ONE_TO_MANY = "OTM";
@@ -67,8 +68,8 @@ function fieldProcess(evt, elementName, type, noMax, useInvisible, uFieldName, a
     (additional != null ? "\"" + additional + "\"" : "null") + ", " +
     (refField != null ? "'" + refField + "'" : "null") +
     ");";
-  if (ctimeVal > 0 && typedChar != 0)
-    clearTimeout(ctimeVal);
+  if (ctimeVal[elementName] > 0 && typedChar != 0)
+    clearTimeout(ctimeVal[elementName]);
   var displayField;
   var invisibleField;
   if (type == "Reference") {
@@ -102,7 +103,7 @@ function fieldProcess(evt, elementName, type, noMax, useInvisible, uFieldName, a
   var waitTime = 50;
   if (typedChar == KEY_ARROWDOWN || typedChar == KEY_ARROWUP || typedChar == NO_INVISIBLE)
     waitTime = 0;
-  ctimeVal = setTimeout(evalText, g_acWaitTime || waitTime);
+  ctimeVal[elementName] = setTimeout(evalText, g_acWaitTime || waitTime);
 }
 
 function initAutoCompleteField(ac) {
@@ -570,7 +571,7 @@ function destroyUpdateField(ac) {
 function getKeyCode(e) {
   if (e == null)
     return 0;
-  return g_isInternetExplorer ? event.keyCode : e.keyCode;
+  return g_isInternetExplorer && window.event ? event.keyCode : e.keyCode;
 }
 
 function fieldProcessNow(typedChar, elementName, type, noMax, useInvisible, uFieldName, additional, refField) {
@@ -643,11 +644,18 @@ function updateRelatedGivenNameAndValue(elementName, elementValue) {
   var viewField = gel("view." + elementName);
   if (viewField == null)
     return;
-  viewField.style.display = "inline";
+  if (isDoctype())
+    viewField.style.display = '';
+  else
+    viewField.style.display = "inline";
   var viewRField = gel("viewr." + elementName);
   var viewHideField = gel("view." + elementName + ".no");
-  if (viewRField != null)
-    viewRField.style.display = "inline";
+  if (viewRField != null) {
+    if (isDoctype())
+      viewRField.style.display = '';
+    else
+      viewRField.style.display = "inline";
+  }
   if (viewHideField != null)
     viewHideField.style.display = "none";
   if (typeof(g_form) == 'undefined')
@@ -815,4 +823,4 @@ function clearDependents(name) {
       clearDependents(current.id);
     }
   }
-}
+};

@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/lib/glide_updates/prototype.effects.js */
 (function() {
   var elemdisplay = {};
   var rfxtypes = /^(?:toggle|show|hide)$/;
@@ -595,4 +596,4 @@
       return elem;
     }
   });
-}());
+}());;

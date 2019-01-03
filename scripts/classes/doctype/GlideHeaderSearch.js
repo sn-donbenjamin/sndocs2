@@ -1,17 +1,19 @@
+/*! RESOURCE: /scripts/classes/doctype/GlideHeaderSearch.js */
 $j(function($) {
   'use strict';
   var keyEvents = isMSIE9 || isMSIE10 ? "keydown" : "keyup"
   $(document).on(keyEvents, "INPUT.list_header_search", function(evt) {
     $(this).addClass('modified');
-    var choiceType = $(this).closest('th').attr('data-choice');
-    if (choiceType == '1' || choiceType == '3') {
-      parseChoice($(this).closest('th'));
+    var choiceType = $(this).closest('[data-choice]').attr('data-choice');
+    var isReference = $(this).closest('[data-glide-type="reference"]').length > 0;
+    if (!isReference && (choiceType == '1' || choiceType == '3')) {
+      parseChoice($(this).closest('[data-choice]'));
     }
     if (evt.keyCode != 13)
       return;
     evt.preventDefault();
     submitHeaderSearch(this);
-  })
+  });
 
   function submitHeaderSearch(el) {
     var $table = $(el).closest('table.list_table');
@@ -25,7 +27,7 @@ $j(function($) {
     var extraParms = {
       sysparm_choice_query_raw: getRawChoiceQuery($table),
       sysparm_list_header_search: true
-    }
+    };
     list.setFilter(query);
     list.refresh(1, extraParms);
   }
@@ -61,9 +63,10 @@ $j(function($) {
 
   function getRawChoiceQuery($table) {
     var query = [];
-    $table.find('tr.list_header_search_row th').each(function(index, el) {
+    $table.find('tr.list_header_search_row td').each(function(index, el) {
       var choiceType = el.getAttribute('data-choice');
-      if (choiceType != '1' && choiceType != '3')
+      var isReference = el.getAttribute('data-glide-type') == "reference";
+      if (isReference || (choiceType != '1' && choiceType != '3'))
         return;
       var field = el.getAttribute('name');
       var $input = $(el).find('input.list_header_search');
@@ -71,7 +74,7 @@ $j(function($) {
         return;
       var term = buildTerm(field, $input.val())
       query.push(term.field + term.operator + term.value);
-    })
+    });
     return query.join('^');
   }
 
@@ -85,8 +88,8 @@ $j(function($) {
         var orMatches = query.match(/\^OR/g) !== null ? query.match(/\^OR/g).length : 0;
         var orderByMatches = query.match(/\^ORDERBY/g) !== null ? query.match(/\^ORDERBY/g).length : 0;
         if (orMatches != orderByMatches || query.indexOf('^NQ') != -1) {
+          $j($table).find('button.list_header_search_toggle').attr('disabled', true);
           $table.addClass('list_header_search_disabled');
-          return jslog('Search disabled due to complex query');
         }
       }
       var listID = $table.attr('data-list_id');
@@ -117,19 +120,21 @@ $j(function($) {
       showHeaderSearchRow($table, hasHeaderQueries, hasGotoQuery);
       disableUnsupportedFields($table);
       $table.data('g_enc_query', enc);
-    })
+      if ($table.hasClass('list_header_search_disabled') && $table.hasClass('list_header_search'))
+        $table.removeClass('list_header_search');
+    });
   }
 
   function setInputValue($table, field, value) {
     if (!value)
       return false;
-    var columnInput = $table.find('.list_header_search_row th[name="' + field + '"] input');
+    var columnInput = $table.find('.list_header_search_row td[name="' + field + '"] input');
     if (columnInput.length == 0 && field.indexOf('.') > -1) {
       var lastDot = field.lastIndexOf('.');
       var refField = field.substring(0, lastDot);
       var refFieldDisplay = field.substring(lastDot + 1);
       columnInput = $table.find('.list_header_search_row ' +
-        'th[name=' + refField + ']' +
+        'td[name=\'' + refField + '\']' +
         '[data-glide-type=reference]' +
         '[data-glide-reference-name=' + refFieldDisplay + ']' +
         ' input');
@@ -141,7 +146,7 @@ $j(function($) {
   function getQueryFromTable($table) {
     var enc_query = $table.data('g_enc_query');
     var terms = enc_query ? enc_query.getTerms() : [];
-    $table.find('tr.list_header_search_row th').each(function(index, el) {
+    $table.find('tr.list_header_search_row td').each(function(index, el) {
       var field = el.getAttribute('name');
       var type = el.getAttribute('data-glide-type');
       var baseField = "";
@@ -165,7 +170,7 @@ $j(function($) {
         if ((terms[i].field == newTerm.field || terms[i].field == baseField) &&
           terms[i].script !== true) {
           found = true;
-          if (newTerm.value)
+          if (newTerm.value || value)
             terms[i] = newTerm;
           else
             terms.splice(i, 1);
@@ -234,7 +239,7 @@ $j(function($) {
     }
     return '';
   }
-  $(document).on("click", "INPUT.list_header_search_toggle", function(evt) {
+  $(document).on("click", "button.list_header_search_toggle", function(evt) {
     var $table = $(this).closest('TABLE')
     if ($table.hasClass('list_header_search_disabled'))
       return;
@@ -244,6 +249,7 @@ $j(function($) {
       $table.removeClass('list_header_search');
     } else {
       isActive = true;
+      disableUnsupportedFields($table);
       $table.addClass('list_header_search');
     }
     if (canUseListSearchPreference())
@@ -265,8 +271,12 @@ $j(function($) {
         'X-UserToken': window.g_ck
       },
       success: function(response) {
-        var responseJSON = JSON.parse(response.documentElement.getAttribute('answer'));
-        callback.call(null, responseJSON.result);
+        if (response) {
+          var responseJSON = JSON.parse(response.documentElement.getAttribute('answer'));
+          callback.call(null, responseJSON.result);
+        } else {
+          callbackError.call(null);
+        }
       },
       error: function() {
         callbackError.call(null);
@@ -281,20 +291,22 @@ $j(function($) {
       canUseListSearchPreference();
     if (preferenceValue) {
       $table.addClass('list_header_search');
+      CustomEvent.fire('listheadersearch.show_hide');
       return;
     }
     var cameFromNavigator = location.search.indexOf('sysparm_userpref_module=') != -1;
     if (cameFromNavigator)
       return;
     var onLoadShowSearch = $table.attr('data-search-show') == 'true';
-    if ((onLoadShowSearch && hasHeaderQueries) || hasGoto)
+    var openWithGoto = $table.find('tr.list_header_search_row').attr('data-open-ongoto') == 'true';
+    if ((onLoadShowSearch && hasHeaderQueries) || (hasGoto && openWithGoto))
       $table.addClass('list_header_search');
   }
 
   function disableUnsupportedFields($table) {
-    $table.find('tr.list_header_search_row th').each(function(index, el) {
+    $table.find('tr.list_header_search_row td').each(function(index, el) {
       var type = el.getAttribute('data-glide-type');
-      if (type == 'user_roles' || type == 'glide_list')
+      if (type == 'user_roles' || type == 'glide_list' || type == 'related_tags' || type == 'sys_class_name')
         $(el).find('input.list_header_search').prop('disabled', true);
     })
   }
@@ -304,4 +316,4 @@ $j(function($) {
   }
   loadFromTables();
   CustomEvent.observe('partial.page.reload', loadFromTables);
-});
+});;

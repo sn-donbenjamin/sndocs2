@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GwtExportScheduleDialog.js */
 var GwtExportScheduleDialog = Class.create(GlideDialogWindow, {
   initialize: function(tableName, query, rows, view, action) {
     GlideDialogWindow.prototype.initialize.call(this, 'export_schedule_dialog');
@@ -54,4 +55,4 @@ var GwtExportScheduleDialog = Class.create(GlideDialogWindow, {
   ack: function(request, message) {
     alert(message);
   }
-});
+});;

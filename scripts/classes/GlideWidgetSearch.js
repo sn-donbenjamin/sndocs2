@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideWidgetSearch.js */
 var GlideWidgetSearch = Class.create(GlideListWidget, {
   initialize: function($super, widgetID, listID, focusOnRefresh) {
     $super(widgetID, listID);
@@ -24,6 +25,9 @@ var GlideWidgetSearch = Class.create(GlideListWidget, {
     var text = this._getElement('text');
     text.observe('keypress', this.searchKeyPress.bind(this));
     var a = text.nextSibling;
+    var spn = text.previousSibling;
+    if (spn && spn.tagName.toUpperCase() == "SPAN")
+      $(spn).observe('click', this.search.bind(this));
     while (a && a.tagName.toUpperCase() != "A")
       a = a.nextSibling;
     if (!a)
@@ -79,4 +83,4 @@ var GlideWidgetSearch = Class.create(GlideListWidget, {
       this._setInner('title', new GwtMessage().getMessage('Go to'));
   },
   type: 'GlideWidgetSearch'
-});
+});;

@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/ui/GlideOverlay.js */
 var GlideOverlay = Class.create(GlideBox, {
   initialize: function($super, options) {
     var opts = Object.extend({
@@ -97,4 +98,4 @@ GlideOverlay.hideMask = function(boolRemove) {
   var mask = $('glide_expose_mask');
   if (mask)
     mask[boolRemove === true ? 'remove' : 'hide']();
-}
+};

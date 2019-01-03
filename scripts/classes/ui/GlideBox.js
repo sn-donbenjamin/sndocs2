@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/ui/GlideBox.js */
 var g_glideBoxes = {};
 var GlideBox = Class.create({
   QUIRKS_MODE: document.compatMode != 'CSS1Compat',
@@ -209,7 +210,9 @@ var GlideBox = Class.create({
     var arr = this._box.getElementsByClassName('gb_close');
     if (arr.length == 1)
       return;
-    var className = this._box.hasClassName('dark') || this._box.hasClassName('iframe') ? 'i12 i12_close' : 'i16 i16_close2';
+    var className = this._box.hasClassName('dark') || this._box.hasClassName('iframe') ?
+      'icon-cross-circle i12 i12_close' :
+      'icon-cross-circle i16 i16_close2';
     this.addToolbarRightDecoration('<span style="float:none;cursor:pointer;" ' +
       'tabindex="0" aria-label="Close" role="button" class="gb_close ' + className + '"></span>');
     this.setToolbarCloseOnClick(function(event) {
@@ -565,8 +568,15 @@ var GlideBox = Class.create({
     var ww = wrapperWidth;
     if (this.QUIRKS_MODE && Prototype.Browser.IE)
       ww += wrapperBorder + wrapper.measure('padding-left') + wrapper.measure('padding-right');
+    var boxSizing = wrapper.getStyle('box-sizing');
+    var bsw = ww;
+    if (boxSizing == 'border-box') {
+      bsw += wrapperBorder + wrapper.measure('padding-left') + wrapper.measure('padding-right');
+    } else if (boxSizing == 'padding-box') {
+      bsw += wrapper.measure('padding-left') + wrapper.measure('padding-right');
+    }
     wrapper.setStyle({
-      width: ww + 'px'
+      width: bsw + 'px'
     });
     body.setStyle({
       width: ww + 'px'
@@ -630,11 +640,17 @@ var GlideBox = Class.create({
         wrapperHeight -= bodyWrapper.measure('padding-top') + bodyWrapper.measure('padding-bottom');
     }
     wrapperHeight = Math.max(wrapperHeight, 0);
-    ww = wrapperHeight;
+    wh = wrapperHeight;
     if (this.QUIRKS_MODE && Prototype.Browser.IE)
-      ww += wrapperBorder + bodyWrapper.measure('padding-top') + bodyWrapper.measure('padding-bottom');
+      wh += wrapperBorder + bodyWrapper.measure('padding-top') + bodyWrapper.measure('padding-bottom');
+    var boxSizing = bodyWrapper.getStyle('box-sizing');
+    if (boxSizing == 'border-box') {
+      wh += wrapperBorder + bodyWrapper.measure('padding-top') + bodyWrapper.measure('padding-bottom');
+    } else if (boxSizing == 'padding-box') {
+      wh += bodyWrapper.measure('padding-top') + bodyWrapper.measure('padding-bottom');
+    }
     this.getBodyWrapperElement().setStyle({
-      height: ww + 'px'
+      height: wh + 'px'
     });
     if (iframe) {
       var iframeWrap2 = iframe.up();
@@ -934,7 +950,7 @@ var GlideBox = Class.create({
   },
   show: function(fadeInTime) {
     this.options.onBeforeShow.call(this);
-    fadeInTime = fadeInTime || fadeInTime === 0 ? fadeInTime : this.options.fadeInTime;
+    fadeInTime = 0;
     if (this._iframeNeedsAutoDimension === true) {
       this._box.setStyle({
         opacity: '0',
@@ -967,7 +983,7 @@ var GlideBox = Class.create({
       autoDimensionOnPreLoad: this.options.autoDimensionOnPreLoad,
       autoDimensionOnLoad: this.options.autoDimensionOnLoad,
       autoPositionOnLoad: this.options.autoPositionOnLoad,
-      fadeInTime: this.options.fadeInTime
+      fadeInTime: 0
     }, options || {});
     this._isClosing = false;
     var bw = this.getBodyWrapperElement();
@@ -1174,4 +1190,4 @@ var gb_FooterTemplate = '<div class="gb_footer_sep"></div><table class="gb_foote
 var gb_BodyTemplate = '<div class="gb_body_wrapper gb_mw"><div class="gb_body"></div></div>';
 var gb_BodyFrameTemplate = '<div class="inner_wrap_outer"><div class="inner_wrap_inner"><div class="gb_body"></div></div></div>';
 var gb_BoxTemplateInner = '<div class="gb_wrapper"><table class="gb_table"><thead><tr><td class="gb_table_col_l1" style="vertical-align:top;">' + gb_ToolbarTemplate + '</td></tr></thead><tbody><tr><td class="gb_table_col_l1">' + gb_BodyTemplate + '</td></tr></tbody><tfoot class="gb_table_tfoot"><tr><td class="gb_table_col_l1">' + gb_FooterTemplate + '</td></tr></tfoot></table></div>';
-var gb_BoxIFrameBody = '<div class="loading_wrap_outer"><div class="loading_wrap_inner">' + gb_LoadingBody + '</div></div><div class="iframe_container inner_wrap_outer"><div class="inner_wrap_inner"><iframe class="gb_iframe" frameborder="0" marginheight="0" marginwidth="0" src="javascript:\'<html></html>\'"></iframe></div></div><div class="clear"></div>';
+var gb_BoxIFrameBody = '<div class="loading_wrap_outer"><div class="loading_wrap_inner">' + gb_LoadingBody + '</div></div><div class="iframe_container inner_wrap_outer"><div class="inner_wrap_inner"><iframe class="gb_iframe" frameborder="0" marginheight="0" marginwidth="0" src="javascript:\'<html></html>\'"></iframe></div></div><div class="clear"></div>';;

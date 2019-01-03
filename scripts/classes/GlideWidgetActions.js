@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideWidgetActions.js */
 var GlideWidgetActions = Class.create(GlideListWidget, {
   initialize: function($super, widgetID, listID, ofText) {
     $super(widgetID, listID);
@@ -38,9 +39,11 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
         if (!validIds || (validIds.length == 0)) {
           opt.style.color = '#777';
           opt.disabled = true;
-        } else if (validIds.length == sysIds.length)
+        } else if (validIds.length == sysIds.length) {
           opt.disabled = false;
-        else {
+          opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+          opt.setAttribute('gsft_allow', '');
+        } else {
           opt.disabled = false;
           opt.innerHTML = getAttributeValue(opt, 'gsft_base_label') + ' (' + validIds.length + ' ' + this.ofText + ' ' + sysIds.length + ')';
           opt.setAttribute('gsft_allow', validIds.join(','));
@@ -52,6 +55,7 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
   _checkAction: function(opt, sysIds) {
     if (sysIds.length == 0) {
       opt.disabled = true;
+      opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
       opt.style.color = '#777';
       return false;
     }
@@ -109,4 +113,4 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
     return false;
   },
   type: 'GlideWidgetActions'
-});
+});;

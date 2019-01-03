@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/plugins/InPlaceEdit.js */
 Plugin.create('inPlaceEdit', {
   initialize: function(elem, options) {
     if (elem.retrieve('inPlaceEdit'))
@@ -98,4 +99,4 @@ Plugin.create('inPlaceEdit', {
     }
     return true;
   }
-});
+});;

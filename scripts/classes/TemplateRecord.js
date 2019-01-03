@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/TemplateRecord.js */
 function applyTemplate(sysID) {
   var t = new TemplateRecord(sysID);
   t.apply();
@@ -50,4 +51,4 @@ TemplateRecord.save = function(id) {
   var f = g_form.getFormElement();
   addHidden(f, 'sysparm_template_editable', fields.join());
   gsftSubmit(id);
-}
+};

@@ -1,8 +1,11 @@
+/*! RESOURCE: /scripts/context_actions.js */
 function switchView(type, tableName, viewName) {
-  if (type == 'list')
-    new GlideViewManager(tableName, viewName).refreshList();
-  else
-    new GlideViewManager(tableName, viewName).refreshDetail();
+  ScriptLoader.getScripts('scripts/classes/GlideViewManager.js', function() {
+    if (type == 'list')
+      new GlideViewManager(tableName, viewName).refreshList();
+    else
+      new GlideViewManager(tableName, viewName).refreshDetail();
+  })
 }
 
 function copyRowToClipboard(base, ref, sysId, view) {
@@ -219,6 +222,9 @@ function personalizeControl(strIdent, id, query) {
 }
 
 function personalizer(strIdent, strForm, strSysId) {
+  if (strIdent == 'auto' && window.$j) {
+    strIdent = $j('[data-section-id]').first().attr('data-section-id');
+  }
   var parentForm = getControlForm(strIdent);
   var form = document.forms['sys_personalize'];
   if (parentForm && parentForm['sysparm_collection_relationship'])
@@ -230,6 +236,10 @@ function personalizer(strIdent, strForm, strSysId) {
   addInput(form, 'HIDDEN', 'sysparm_sys_id', strSysId);
   if (parentForm && parentForm['sysparm_collection'])
     addInput(form, 'HIDDEN', 'sysparm_collection', parentForm['sysparm_collection'].value);
+  var scopeElement = gel('sysparm_domain_scope');
+  if (scopeElement && scopeElement.value) {
+    addInput(form, 'HIDDEN', 'sysparm_domain_scope', scopeElement.value);
+  }
   form.submit();
 }
 
@@ -271,6 +281,7 @@ function personalizeSecurity(identifier, field_name) {
   var g_dialog = new GlideDialogWindow('security_mechanic');
   g_dialog.setPreference('table_name', a[0]);
   g_dialog.setPreference('field_name', a[1]);
+  g_dialog.setSize(600, '');
   g_dialog.setTitle('Security Mechanic');
   g_dialog.render();
 }
@@ -301,17 +312,19 @@ function listCollection(coll_table, coll_field, of_table, view_name) {
 
 function exportToPDF(table, sys_id, isLandscape, sysparm_view) {
   var relatedListFilters = "";
-  var relatedLists = g_tabs2List.tabIDs;
-  var relatedListCount = relatedLists.length;
-  if (relatedListCount > 0) {
-    for (var i = 0; i < relatedListCount; i++) {
-      var relatedListName = relatedLists[i].substring(0, relatedLists[i].lastIndexOf("_list"));
-      var filter = getFilter(relatedListName);
-      if (filter && filter.length > 0) {
-        if (i == relatedListCount - 1)
-          relatedListFilters += relatedListName + "=" + encodeURIComponent(encodeURIComponent(filter));
-        else
-          relatedListFilters += relatedListName + "=" + encodeURIComponent(encodeURIComponent(filter)) + "^";
+  if (window.g_tabs2List && g_tabs2List.tabIDs) {
+    var relatedLists = g_tabs2List.tabIDs;
+    var relatedListCount = relatedLists.length;
+    if (relatedListCount > 0) {
+      for (var i = 0; i < relatedListCount; i++) {
+        var relatedListName = relatedLists[i].substring(0, relatedLists[i].lastIndexOf("_list"));
+        var filter = getFilter(relatedListName);
+        if (filter && filter.length > 0) {
+          if (i == relatedListCount - 1)
+            relatedListFilters += relatedListName + "=" + encodeURIComponent(encodeURIComponent(filter));
+          else
+            relatedListFilters += relatedListName + "=" + encodeURIComponent(encodeURIComponent(filter)) + "^";
+        }
       }
     }
   }
@@ -491,4 +504,4 @@ function setStack(form) {
   var stack = url.getParam('sysparm_nameofstack');
   if (stack)
     addInput(form, 'HIDDEN', 'sysparm_nameofstack', stack);
-}
+};

@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideListWidget.js */
 var GlideListWidget = Class.create();
 GlideListWidget.prototype = {
   initialize: function(widgetID, listID) {
@@ -46,4 +47,4 @@ GlideListWidget.prototype = {
 var GlideListWidgets = {};
 GlideListWidget.get = function(id) {
   return GlideListWidgets[id];
-}
+};
