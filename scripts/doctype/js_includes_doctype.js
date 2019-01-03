@@ -24060,7 +24060,10 @@ var AJAXReferenceCompleter = Class.create(AJAXCompleter, {
     this.max = doc.getAttribute('sysparm_max');
   },
   addSysParms: function() {
-    var sp = "sysparm_name=" + this.elementName +
+    var name = this.elementName;
+    if (this.elementName.indexOf('catalog_ui_policy.IO:') === 0)
+      name = this.elementName.substring(18, this.elementName.length);
+    var sp = "sysparm_name=" + name +
       "&sysparm_timer=" + this.timer +
       "&sysparm_max=" + this.max +
       "&sysparm_chars=" + encodeText(this.searchChars);
@@ -33055,468 +33058,6 @@ function refreshNavIfNotDoctypeUI() {
   if (!isDoctype)
     refreshNav();
 };
-/*! RESOURCE: scripts/TestClient.js */
-function popTestClient(test_definition, test_subject) {
-  var test_execution;
-  if (!test_subject)
-    test_execution = test_definition;
-  var dialog = new GlideDialogWindow('test_client', false, "50em", "25em");
-  if (test_execution) {
-    dialog.setPreference('sysparm_test_execution', test_execution);
-  } else {
-    dialog.setPreference('sysparm_test_definition', test_definition);
-    dialog.setPreference('sysparm_test_subject', test_subject);
-  }
-  dialog.render();
-}
-var TestClient = Class.create();
-TestClient.prototype = {
-  TEST_STATES: ["Pending", "Running", "Succeeded", "Failed"],
-  STATUS_IMAGES: ["images/workflow_skipped.gif",
-    "images/loading_anim2.gifx", "images/workflow_complete.gifx",
-    "images/workflow_rejected.gifx"
-  ],
-  TRANSLATED_TEXT: ["Pending", "Running", "Succeeded", "Failed",
-    "Details", "more", "Hide Details", "Show Details"
-  ],
-  TIMEOUT_INTERVAL: 1000,
-  translator: new GwtMessage(),
-  detailStates: {},
-  id: "",
-  container: null,
-  initialize: function(test_definition, test_subject) {
-    this.container = $("container");
-    this._setContainerStyles(this.container);
-    this.translator.getMessages(this.TRANSLATED_TEXT);
-    var test_execution;
-    if (!test_subject) {
-      this.id = test_definition
-      return
-    }
-    this.testDefinition = test_definition;
-    this.testSubject = test_subject;
-  },
-  start: function() {
-    if (this.id) {
-      this.getStatus();
-      return;
-    }
-    var ga = new GlideAjax('AJAXTestProcessor');
-    ga.addParam('sysparm_name', 'startTest');
-    ga.addParam('sysparm_test_definition', this.testDefinition);
-    ga.addParam('sysparm_test_subject', this.testSubject);
-    ga.getXML(this.handleStart.bind(this));
-  },
-  handleStart: function(response) {
-    this.id = response.responseXML.documentElement.getAttribute("answer");
-    this.getStatus();
-  },
-  getStatus: function() {
-    var ga = new GlideAjax('AJAXTestProcessor');
-    ga.addParam('sysparm_name', 'getStatus');
-    ga.addParam('sysparm_execution_id', this.id);
-    if (typeof this.id != "string" || this.id == "")
-      return;
-    ga.getXML(this.handleGetStatus.bind(this));
-  },
-  handleGetStatus: function(response) {
-    var answer = response.responseXML.documentElement.getAttribute("answer");
-    eval("var so = " + answer);
-    this.renderStatus(so);
-    this.container = $("container");
-    if (this.container == null)
-      return;
-    if (so.state == "0" || so.state == "1")
-      setTimeout(this.getStatus.bind(this), this.TIMEOUT_INTERVAL);
-  },
-  renderStatus: function(so) {
-    if (!so)
-      return;
-    var new_container = new Element("div");
-    this._setContainerStyles(new_container);
-    new_container.appendChild(this.getStatusRow(so));
-    this.container.replace(new_container);
-    this.container = new_container;
-  },
-  getStatusRow: function(obj, order) {
-    var name = obj.name;
-    var state = obj.state;
-    var message = obj.message;
-    var percent = NaN;
-    if (obj.percent_complete) {
-      percent = parseInt(obj.percent_complete);
-    }
-    var hasPercent = (!isNaN(percent) && percent > 0 && percent <= 100);
-    var hasDetails = (obj.results.length >= 1 || message != "");
-    var tr = new Element("div", {
-      id: "row_container-" + obj.sys_id
-    });
-    tr.style.padding = "5px";
-    var simp = new Element("div");
-    simp.appendChild(this._getImage(obj));
-    simp.appendChild(this._getItemTitleElement(name, order));
-    var det = this._getDetailElement();
-    var dtl;
-    if (hasDetails || hasPercent)
-      dtl = det.appendChild(this._getShowDetailsLink(obj.sys_id));
-    simp.appendChild(det);
-    simp.appendChild(this._getFloatClear("both"));
-    tr.appendChild(simp);
-    if (hasDetails || hasPercent) {
-      var dtd = new Element("div");
-      var ddc = new Element("div");
-      ddc.style.marginTop = ".5em";
-      ddc.style.marginLeft = "30px";
-      ddc.id = "detail_cont-" + obj.sys_id;
-      dtd.appendChild(ddc);
-      if (hasPercent) {
-        ddc.appendChild(this._getProgressBar(percent));
-        ddc.appendChild(this._getFloatClear("both"));
-      }
-      if (message != "") {
-        var dds = new Element("div");
-        dds.appendChild(this._getDetailsText(message, obj));
-        dds.style.fontSize = "smaller";
-        dds.style.marginBottom = ".5em";
-        ddc.appendChild(dds);
-      }
-      dtl.details_container = ddc;
-      if (typeof this.detailStates[obj.sys_id] == "boolean" && this.detailStates[obj.sys_id] == false && dtl != null)
-        dtl.onclick();
-      tr.appendChild(dtd);
-      this.renderChildren(obj, ddc);
-    }
-    return tr;
-  },
-  _getItemTitleElement: function(name, order) {
-    var nameHtml = "<b>" + name + "</b>";
-    if (order) {
-      nameHtml = "\t" + order + ".\t" + nameHtml;
-    }
-    var nsp = new Element("span");
-    nsp.innerHTML = nameHtml;
-    nsp.style.float = "left";
-    return nsp;
-  },
-  _getImage: function(obj) {
-    var state = obj.state;
-    var si = new Element("img");
-    si.id = "img-" + obj.sys_id;
-    si.src = this.STATUS_IMAGES[state];
-    si.style.marginRight = "10px";
-    si.style.float = "left";
-    si.title = this.TEST_STATES[state];
-    return si;
-  },
-  _getDetailElement: function() {
-    var det = new Element("span");
-    det.style.marginLeft = "10px";
-    det.style.float = "left";
-    return det;
-  },
-  _getShowDetailsLink: function(objSysID) {
-    var da = new Element("a");
-    da.id = objSysID;
-    da.controller = this;
-    da.innerHTML = "(" + this.translator.getMessage("Hide Details") + ")";
-    da.toggleText = "(" + this.translator.getMessage("Show Details") + ")";
-    da.style.fontSize = "8pt";
-    da.style.float = "left";
-    da.onclick = this.__detailsToggle;
-    return da;
-  },
-  __detailsToggle: function() {
-    var cont = this.details_container;
-    cont.toggle();
-    this.controller.detailStates[this.id] = cont.visible();
-    var nt = this.toggleText;
-    this.toggleText = this.innerHTML;
-    this.innerHTML = nt;
-  },
-  _getDetailsText: function(message, obj) {
-    if (message.length > 150) {
-      var new_message = new Element("span");
-      new_message.innerHTML = "<b>" +
-        this.translator.getMessage("Details") + ": </b>" +
-        message.slice(0, 150) + "... ";
-      var anch = new Element("a");
-      anch.href = "test_execution.do?sys_id=" + obj.sys_id;
-      anch.innerHTML = "<b>(" + this.translator.getMessage("more") +
-        ")</b>";
-      new_message.appendChild(anch);
-      return new_message;
-    } else {
-      var new_message = new Element("span")
-      new_message.innerHTML = "<b>" +
-        this.translator.getMessage("Details") + ": </b>" +
-        message;
-      return new_message;
-    }
-  },
-  _getProgressBar: function(percent) {
-    percent = Math.max(0, Math.min(100, percent));
-    var progressContainer = new Element("div");
-    progressContainer.style.width = "300px";
-    progressContainer.style.height = "8px";
-    progressContainer.style.border = "1px solid black";
-    progressContainer.style.borderRadius = "10px";
-    progressContainer.style.padding = "2px";
-    progressContainer.style.marginTop = "2px";
-    progressContainer.style.marginBottom = "2px";
-    progressContainer.style.float = "left";
-    var progressBar = new Element("div");
-    progressBar.style.width = percent + "%";
-    progressBar.style.height = "100%";
-    progressBar.style.borderRadius = "10px";
-    progressBar.style.backgroundColor = "#667788";
-    progressContainer.appendChild(progressBar);
-    return progressContainer;
-  },
-  _getFloatClear: function(which) {
-    var br = new Element("br");
-    br.style.clear = which;
-    return br;
-  },
-  renderChildren: function(so, pr_cont) {
-    if (!so.results)
-      return;
-    for (var i = 0; i < so.results.length; i++) {
-      pr_cont.appendChild(this.getStatusRow(so.results[i], i + 1)).style.marginLeft = "15px";
-    }
-  },
-  _setContainerStyles: function(container) {
-    container.id = "container";
-    container.style.overflowY = "auto";
-    container.style.maxHeight = "50em";
-    container.style.marginRight = ".25em";
-    container.style.marginLeft = ".25em";
-  },
-  type: 'TestClient'
-};;
-/*! RESOURCE: scripts/classes/GlideMenu.js */
-var GlideMenu = Class.create();
-GlideMenu.prototype = {
-  initialize: function(idSuffix, type) {
-    this.suffix = idSuffix;
-    this.type = type;
-    this.clear();
-  },
-  destroy: function() {
-    this.clear();
-  },
-  clear: function() {
-    this.menuItems = [];
-    this.variables = {};
-    this.onShowScripts = [];
-  },
-  isEmpty: function() {
-    var e = gel('context.' + this.type + "." + this.suffix);
-    if (e) {
-      var script = e.innerHTML;
-      if (window.execScript)
-        window.execScript(script);
-      else
-        eval.call(window, script);
-      Element.remove(e);
-    }
-    for (var i = 0; i < this.menuItems.length; i++) {
-      if (this.menuItems[i].parentId == '')
-        return false;
-    }
-    return true;
-  },
-  load: function() {},
-  add: function(sysId, id, parentId, label, type, action, order, img, trackSelected) {
-    var item = {};
-    item.sysId = sysId;
-    item.id = id;
-    item.parentId = parentId;
-    item.label = label;
-    item.type = type;
-    item.action = action || "";
-    item.order = order;
-    item.image = img;
-    item.trackSelected = (trackSelected == "true");
-    this._add(item);
-  },
-  addItem: function(id, parentId, label, type, action, order, img, trackSelected, onShowScript) {
-    var item = {};
-    item.id = id;
-    item.parentId = parentId;
-    item.label = label;
-    item.type = type;
-    item.action = action;
-    item.order = order;
-    item.image = img;
-    item.trackSelected = (trackSelected == "true");
-    item.onShowScript = onShowScript;
-    this._add(item);
-  },
-  _add: function(item) {
-    if (!item.order)
-      item.order = 0;
-    this.menuItems.push(item);
-  },
-  increaseItemsOrder: function(increase) {
-    for (var i = 0; i < this.menuItems.length; i++)
-      this.menuItems[i].order += increase;
-  },
-  addAction: function(label, action, order) {
-    this.addItem("", "", label, "action", action, order);
-  },
-  showContextMenu: function(evt, id, variables) {
-    this.variables = variables;
-    id += this.suffix;
-    if (!getMenuByName(id))
-      this._createMenu(id);
-    var cm = getMenuByName(id);
-    if (cm.context.isEmpty())
-      return;
-    this._loadVariables(variables);
-    for (var i = 0; i < this.onShowScripts.length; i++) {
-      var onShow = this.onShowScripts[i];
-      g_menu = getMenuByName(onShow.menuId);
-      if (!g_menu)
-        continue;
-      g_menu = g_menu.context;
-      if (!g_menu)
-        continue;
-      g_item = g_menu.getItem(onShow.itemId);
-      if (!g_item)
-        continue;
-      this._runOnShowScript(onShow.script, onShow.itemId);
-    }
-    this._clearVariables(variables);
-    g_menu = null;
-    g_item = null;
-    return contextShow(evt, id, 0, 0, 0);
-  },
-  _createMenu: function(id) {
-    var cm = new GwtContextMenu(id);
-    cm.clear();
-    this._sort();
-    this._buildMenu("", cm);
-  },
-  _sort: function() {
-    this.menuItems = this.menuItems.sort(function(a, b) {
-      var aOrder = parseInt("0" + a.order, 10);
-      var bOrder = parseInt("0" + b.order, 10);
-      if ((aOrder) < (bOrder)) {
-        return -1;
-      }
-      if ((aOrder) > (bOrder)) {
-        return 1;
-      }
-      return 0;
-    });
-  },
-  _buildMenu: function(parentId, cm) {
-    var lastType;
-    var itemsAfterLine = 0;
-    for (var i = 0; i < this.menuItems.length; i++) {
-      var item = this.menuItems[i];
-      if (parentId != item.parentId)
-        continue;
-      if (lastType == "line" && item.type == "line")
-        continue;
-      if (lastType == "line" && itemsAfterLine > 0) {
-        this._addLine(cm);
-        itemsAfterLine = 0;
-      }
-      lastType = item.type;
-      if (lastType == "line")
-        continue;
-      if (this._addMenuItem(cm, item))
-        itemsAfterLine++;
-    }
-  },
-  _addLine: function(cm) {
-    cm.addLine();
-  },
-  _addMenuItem: function(cm, item) {
-    var added = true;
-    var mi;
-    if (item.type == "action") {
-      if (!this._getAction(item))
-        mi = cm.addLabel(item.label);
-      else
-        mi = cm.addFunc(item.label, this._runMenuAction.bind(this, item), item.id);
-    } else if (item.type == "label") {
-      mi = cm.addLabel(item.label);
-    } else if (item.type == "menu") {
-      var sm = new GwtContextMenu(item.id + '_' + this.suffix);
-      if (item.trackSelected)
-        sm.setTrackSelected(true);
-      this._buildMenu(item.id, sm);
-      if (sm.isEmpty())
-        added = false;
-      else
-        mi = cm.addMenu(item.label, sm, item.id);
-    }
-    if (mi && item.image)
-      cm.setImage(mi, item.image);
-    if (added && this._getOnShowScript(item)) {
-      var o = {};
-      o.menuId = cm.id;
-      o.itemId = item.id;
-      o.script = this._getOnShowScript(item);
-      this.onShowScripts.push(o);
-    }
-    return added;
-  },
-  _getAction: function(item) {
-    var action = '';
-    if (item.action)
-      action = item.action;
-    if (item.sysId)
-      action += '\n' + GlideMenu.scripts[item.sysId];
-    return action;
-  },
-  _getOnShowScript: function(item) {
-    if (item.sysId)
-      return GlideMenu.onScripts[item.sysId];
-    return item.onShowScript;
-  },
-  _runMenuAction: function(item) {
-    this._loadVariables(this.variables);
-    try {
-      eval(this._getAction(item));
-    } catch (ex) {
-      jslog("Error running context menu '" + item.label + "': " + ex);
-    }
-    this._clearVariables(this.variables);
-  },
-  _runOnShowScript: function(script, itemId) {
-    try {
-      eval(script);
-    } catch (ex) {
-      jslog("Error running onShow script for item '" + itemId + "': " + ex);
-    }
-  },
-  _loadVariables: function(variables) {
-    for (var n in variables) {
-      var s = n + '=variables["' + n + '"]';
-      eval(s);
-    }
-  },
-  _clearVariables: function(variables) {
-    for (var n in variables) {
-      var s = n + '=null;'
-      eval(s);
-    }
-  },
-  type: 'GlideMenu'
-};
-GlideMenu.scripts = {};
-GlideMenu.onScripts = {};
-GlideMenu.addScripts = function(o) {
-  if (o == null)
-    return;
-  for (var s in o.scripts)
-    GlideMenu.scripts[s] = o.scripts[s];
-  for (var s in o.onScripts)
-    GlideMenu.onScripts[s] = o.onScripts[s];
-};
 /*! RESOURCE: scripts/OpticsInspector.js */
 var OpticsInspector = Class
   .create({
@@ -34077,6 +33618,468 @@ var ImageUploader = Class.create(Uploader, {
     return false;
   }
 });;
+/*! RESOURCE: scripts/classes/GlideMenu.js */
+var GlideMenu = Class.create();
+GlideMenu.prototype = {
+  initialize: function(idSuffix, type) {
+    this.suffix = idSuffix;
+    this.type = type;
+    this.clear();
+  },
+  destroy: function() {
+    this.clear();
+  },
+  clear: function() {
+    this.menuItems = [];
+    this.variables = {};
+    this.onShowScripts = [];
+  },
+  isEmpty: function() {
+    var e = gel('context.' + this.type + "." + this.suffix);
+    if (e) {
+      var script = e.innerHTML;
+      if (window.execScript)
+        window.execScript(script);
+      else
+        eval.call(window, script);
+      Element.remove(e);
+    }
+    for (var i = 0; i < this.menuItems.length; i++) {
+      if (this.menuItems[i].parentId == '')
+        return false;
+    }
+    return true;
+  },
+  load: function() {},
+  add: function(sysId, id, parentId, label, type, action, order, img, trackSelected) {
+    var item = {};
+    item.sysId = sysId;
+    item.id = id;
+    item.parentId = parentId;
+    item.label = label;
+    item.type = type;
+    item.action = action || "";
+    item.order = order;
+    item.image = img;
+    item.trackSelected = (trackSelected == "true");
+    this._add(item);
+  },
+  addItem: function(id, parentId, label, type, action, order, img, trackSelected, onShowScript) {
+    var item = {};
+    item.id = id;
+    item.parentId = parentId;
+    item.label = label;
+    item.type = type;
+    item.action = action;
+    item.order = order;
+    item.image = img;
+    item.trackSelected = (trackSelected == "true");
+    item.onShowScript = onShowScript;
+    this._add(item);
+  },
+  _add: function(item) {
+    if (!item.order)
+      item.order = 0;
+    this.menuItems.push(item);
+  },
+  increaseItemsOrder: function(increase) {
+    for (var i = 0; i < this.menuItems.length; i++)
+      this.menuItems[i].order += increase;
+  },
+  addAction: function(label, action, order) {
+    this.addItem("", "", label, "action", action, order);
+  },
+  showContextMenu: function(evt, id, variables) {
+    this.variables = variables;
+    id += this.suffix;
+    if (!getMenuByName(id))
+      this._createMenu(id);
+    var cm = getMenuByName(id);
+    if (cm.context.isEmpty())
+      return;
+    this._loadVariables(variables);
+    for (var i = 0; i < this.onShowScripts.length; i++) {
+      var onShow = this.onShowScripts[i];
+      g_menu = getMenuByName(onShow.menuId);
+      if (!g_menu)
+        continue;
+      g_menu = g_menu.context;
+      if (!g_menu)
+        continue;
+      g_item = g_menu.getItem(onShow.itemId);
+      if (!g_item)
+        continue;
+      this._runOnShowScript(onShow.script, onShow.itemId);
+    }
+    this._clearVariables(variables);
+    g_menu = null;
+    g_item = null;
+    return contextShow(evt, id, 0, 0, 0);
+  },
+  _createMenu: function(id) {
+    var cm = new GwtContextMenu(id);
+    cm.clear();
+    this._sort();
+    this._buildMenu("", cm);
+  },
+  _sort: function() {
+    this.menuItems = this.menuItems.sort(function(a, b) {
+      var aOrder = parseInt("0" + a.order, 10);
+      var bOrder = parseInt("0" + b.order, 10);
+      if ((aOrder) < (bOrder)) {
+        return -1;
+      }
+      if ((aOrder) > (bOrder)) {
+        return 1;
+      }
+      return 0;
+    });
+  },
+  _buildMenu: function(parentId, cm) {
+    var lastType;
+    var itemsAfterLine = 0;
+    for (var i = 0; i < this.menuItems.length; i++) {
+      var item = this.menuItems[i];
+      if (parentId != item.parentId)
+        continue;
+      if (lastType == "line" && item.type == "line")
+        continue;
+      if (lastType == "line" && itemsAfterLine > 0) {
+        this._addLine(cm);
+        itemsAfterLine = 0;
+      }
+      lastType = item.type;
+      if (lastType == "line")
+        continue;
+      if (this._addMenuItem(cm, item))
+        itemsAfterLine++;
+    }
+  },
+  _addLine: function(cm) {
+    cm.addLine();
+  },
+  _addMenuItem: function(cm, item) {
+    var added = true;
+    var mi;
+    if (item.type == "action") {
+      if (!this._getAction(item))
+        mi = cm.addLabel(item.label);
+      else
+        mi = cm.addFunc(item.label, this._runMenuAction.bind(this, item), item.id);
+    } else if (item.type == "label") {
+      mi = cm.addLabel(item.label);
+    } else if (item.type == "menu") {
+      var sm = new GwtContextMenu(item.id + '_' + this.suffix);
+      if (item.trackSelected)
+        sm.setTrackSelected(true);
+      this._buildMenu(item.id, sm);
+      if (sm.isEmpty())
+        added = false;
+      else
+        mi = cm.addMenu(item.label, sm, item.id);
+    }
+    if (mi && item.image)
+      cm.setImage(mi, item.image);
+    if (added && this._getOnShowScript(item)) {
+      var o = {};
+      o.menuId = cm.id;
+      o.itemId = item.id;
+      o.script = this._getOnShowScript(item);
+      this.onShowScripts.push(o);
+    }
+    return added;
+  },
+  _getAction: function(item) {
+    var action = '';
+    if (item.action)
+      action = item.action;
+    if (item.sysId)
+      action += '\n' + GlideMenu.scripts[item.sysId];
+    return action;
+  },
+  _getOnShowScript: function(item) {
+    if (item.sysId)
+      return GlideMenu.onScripts[item.sysId];
+    return item.onShowScript;
+  },
+  _runMenuAction: function(item) {
+    this._loadVariables(this.variables);
+    try {
+      eval(this._getAction(item));
+    } catch (ex) {
+      jslog("Error running context menu '" + item.label + "': " + ex);
+    }
+    this._clearVariables(this.variables);
+  },
+  _runOnShowScript: function(script, itemId) {
+    try {
+      eval(script);
+    } catch (ex) {
+      jslog("Error running onShow script for item '" + itemId + "': " + ex);
+    }
+  },
+  _loadVariables: function(variables) {
+    for (var n in variables) {
+      var s = n + '=variables["' + n + '"]';
+      eval(s);
+    }
+  },
+  _clearVariables: function(variables) {
+    for (var n in variables) {
+      var s = n + '=null;'
+      eval(s);
+    }
+  },
+  type: 'GlideMenu'
+};
+GlideMenu.scripts = {};
+GlideMenu.onScripts = {};
+GlideMenu.addScripts = function(o) {
+  if (o == null)
+    return;
+  for (var s in o.scripts)
+    GlideMenu.scripts[s] = o.scripts[s];
+  for (var s in o.onScripts)
+    GlideMenu.onScripts[s] = o.onScripts[s];
+};
+/*! RESOURCE: scripts/TestClient.js */
+function popTestClient(test_definition, test_subject) {
+  var test_execution;
+  if (!test_subject)
+    test_execution = test_definition;
+  var dialog = new GlideDialogWindow('test_client', false, "50em", "25em");
+  if (test_execution) {
+    dialog.setPreference('sysparm_test_execution', test_execution);
+  } else {
+    dialog.setPreference('sysparm_test_definition', test_definition);
+    dialog.setPreference('sysparm_test_subject', test_subject);
+  }
+  dialog.render();
+}
+var TestClient = Class.create();
+TestClient.prototype = {
+  TEST_STATES: ["Pending", "Running", "Succeeded", "Failed"],
+  STATUS_IMAGES: ["images/workflow_skipped.gif",
+    "images/loading_anim2.gifx", "images/workflow_complete.gifx",
+    "images/workflow_rejected.gifx"
+  ],
+  TRANSLATED_TEXT: ["Pending", "Running", "Succeeded", "Failed",
+    "Details", "more", "Hide Details", "Show Details"
+  ],
+  TIMEOUT_INTERVAL: 1000,
+  translator: new GwtMessage(),
+  detailStates: {},
+  id: "",
+  container: null,
+  initialize: function(test_definition, test_subject) {
+    this.container = $("container");
+    this._setContainerStyles(this.container);
+    this.translator.getMessages(this.TRANSLATED_TEXT);
+    var test_execution;
+    if (!test_subject) {
+      this.id = test_definition
+      return
+    }
+    this.testDefinition = test_definition;
+    this.testSubject = test_subject;
+  },
+  start: function() {
+    if (this.id) {
+      this.getStatus();
+      return;
+    }
+    var ga = new GlideAjax('AJAXTestProcessor');
+    ga.addParam('sysparm_name', 'startTest');
+    ga.addParam('sysparm_test_definition', this.testDefinition);
+    ga.addParam('sysparm_test_subject', this.testSubject);
+    ga.getXML(this.handleStart.bind(this));
+  },
+  handleStart: function(response) {
+    this.id = response.responseXML.documentElement.getAttribute("answer");
+    this.getStatus();
+  },
+  getStatus: function() {
+    var ga = new GlideAjax('AJAXTestProcessor');
+    ga.addParam('sysparm_name', 'getStatus');
+    ga.addParam('sysparm_execution_id', this.id);
+    if (typeof this.id != "string" || this.id == "")
+      return;
+    ga.getXML(this.handleGetStatus.bind(this));
+  },
+  handleGetStatus: function(response) {
+    var answer = response.responseXML.documentElement.getAttribute("answer");
+    eval("var so = " + answer);
+    this.renderStatus(so);
+    this.container = $("container");
+    if (this.container == null)
+      return;
+    if (so.state == "0" || so.state == "1")
+      setTimeout(this.getStatus.bind(this), this.TIMEOUT_INTERVAL);
+  },
+  renderStatus: function(so) {
+    if (!so)
+      return;
+    var new_container = new Element("div");
+    this._setContainerStyles(new_container);
+    new_container.appendChild(this.getStatusRow(so));
+    this.container.replace(new_container);
+    this.container = new_container;
+  },
+  getStatusRow: function(obj, order) {
+    var name = obj.name;
+    var state = obj.state;
+    var message = obj.message;
+    var percent = NaN;
+    if (obj.percent_complete) {
+      percent = parseInt(obj.percent_complete);
+    }
+    var hasPercent = (!isNaN(percent) && percent > 0 && percent <= 100);
+    var hasDetails = (obj.results.length >= 1 || message != "");
+    var tr = new Element("div", {
+      id: "row_container-" + obj.sys_id
+    });
+    tr.style.padding = "5px";
+    var simp = new Element("div");
+    simp.appendChild(this._getImage(obj));
+    simp.appendChild(this._getItemTitleElement(name, order));
+    var det = this._getDetailElement();
+    var dtl;
+    if (hasDetails || hasPercent)
+      dtl = det.appendChild(this._getShowDetailsLink(obj.sys_id));
+    simp.appendChild(det);
+    simp.appendChild(this._getFloatClear("both"));
+    tr.appendChild(simp);
+    if (hasDetails || hasPercent) {
+      var dtd = new Element("div");
+      var ddc = new Element("div");
+      ddc.style.marginTop = ".5em";
+      ddc.style.marginLeft = "30px";
+      ddc.id = "detail_cont-" + obj.sys_id;
+      dtd.appendChild(ddc);
+      if (hasPercent) {
+        ddc.appendChild(this._getProgressBar(percent));
+        ddc.appendChild(this._getFloatClear("both"));
+      }
+      if (message != "") {
+        var dds = new Element("div");
+        dds.appendChild(this._getDetailsText(message, obj));
+        dds.style.fontSize = "smaller";
+        dds.style.marginBottom = ".5em";
+        ddc.appendChild(dds);
+      }
+      dtl.details_container = ddc;
+      if (typeof this.detailStates[obj.sys_id] == "boolean" && this.detailStates[obj.sys_id] == false && dtl != null)
+        dtl.onclick();
+      tr.appendChild(dtd);
+      this.renderChildren(obj, ddc);
+    }
+    return tr;
+  },
+  _getItemTitleElement: function(name, order) {
+    var nameHtml = "<b>" + name + "</b>";
+    if (order) {
+      nameHtml = "\t" + order + ".\t" + nameHtml;
+    }
+    var nsp = new Element("span");
+    nsp.innerHTML = nameHtml;
+    nsp.style.float = "left";
+    return nsp;
+  },
+  _getImage: function(obj) {
+    var state = obj.state;
+    var si = new Element("img");
+    si.id = "img-" + obj.sys_id;
+    si.src = this.STATUS_IMAGES[state];
+    si.style.marginRight = "10px";
+    si.style.float = "left";
+    si.title = this.TEST_STATES[state];
+    return si;
+  },
+  _getDetailElement: function() {
+    var det = new Element("span");
+    det.style.marginLeft = "10px";
+    det.style.float = "left";
+    return det;
+  },
+  _getShowDetailsLink: function(objSysID) {
+    var da = new Element("a");
+    da.id = objSysID;
+    da.controller = this;
+    da.innerHTML = "(" + this.translator.getMessage("Hide Details") + ")";
+    da.toggleText = "(" + this.translator.getMessage("Show Details") + ")";
+    da.style.fontSize = "8pt";
+    da.style.float = "left";
+    da.onclick = this.__detailsToggle;
+    return da;
+  },
+  __detailsToggle: function() {
+    var cont = this.details_container;
+    cont.toggle();
+    this.controller.detailStates[this.id] = cont.visible();
+    var nt = this.toggleText;
+    this.toggleText = this.innerHTML;
+    this.innerHTML = nt;
+  },
+  _getDetailsText: function(message, obj) {
+    if (message.length > 150) {
+      var new_message = new Element("span");
+      new_message.innerHTML = "<b>" +
+        this.translator.getMessage("Details") + ": </b>" +
+        message.slice(0, 150) + "... ";
+      var anch = new Element("a");
+      anch.href = "test_execution.do?sys_id=" + obj.sys_id;
+      anch.innerHTML = "<b>(" + this.translator.getMessage("more") +
+        ")</b>";
+      new_message.appendChild(anch);
+      return new_message;
+    } else {
+      var new_message = new Element("span")
+      new_message.innerHTML = "<b>" +
+        this.translator.getMessage("Details") + ": </b>" +
+        message;
+      return new_message;
+    }
+  },
+  _getProgressBar: function(percent) {
+    percent = Math.max(0, Math.min(100, percent));
+    var progressContainer = new Element("div");
+    progressContainer.style.width = "300px";
+    progressContainer.style.height = "8px";
+    progressContainer.style.border = "1px solid black";
+    progressContainer.style.borderRadius = "10px";
+    progressContainer.style.padding = "2px";
+    progressContainer.style.marginTop = "2px";
+    progressContainer.style.marginBottom = "2px";
+    progressContainer.style.float = "left";
+    var progressBar = new Element("div");
+    progressBar.style.width = percent + "%";
+    progressBar.style.height = "100%";
+    progressBar.style.borderRadius = "10px";
+    progressBar.style.backgroundColor = "#667788";
+    progressContainer.appendChild(progressBar);
+    return progressContainer;
+  },
+  _getFloatClear: function(which) {
+    var br = new Element("br");
+    br.style.clear = which;
+    return br;
+  },
+  renderChildren: function(so, pr_cont) {
+    if (!so.results)
+      return;
+    for (var i = 0; i < so.results.length; i++) {
+      pr_cont.appendChild(this.getStatusRow(so.results[i], i + 1)).style.marginLeft = "15px";
+    }
+  },
+  _setContainerStyles: function(container) {
+    container.id = "container";
+    container.style.overflowY = "auto";
+    container.style.maxHeight = "50em";
+    container.style.marginRight = ".25em";
+    container.style.marginLeft = ".25em";
+  },
+  type: 'TestClient'
+};;
 /*! RESOURCE: scripts/spell.js */
 var TAG_DIV = "div";
 var TAG_SPAN = "span";

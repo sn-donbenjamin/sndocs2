@@ -293,7 +293,10 @@ var AJAXReferenceCompleter = Class.create(AJAXCompleter, {
     this.max = doc.getAttribute('sysparm_max');
   },
   addSysParms: function() {
-    var sp = "sysparm_name=" + this.elementName +
+    var name = this.elementName;
+    if (this.elementName.indexOf('catalog_ui_policy.IO:') === 0)
+      name = this.elementName.substring(18, this.elementName.length);
+    var sp = "sysparm_name=" + name +
       "&sysparm_timer=" + this.timer +
       "&sysparm_max=" + this.max +
       "&sysparm_chars=" + encodeText(this.searchChars);
