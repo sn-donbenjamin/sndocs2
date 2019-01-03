@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideList2Handlers.js */
 var GlideList2NewHandler = Class.create();
 GlideList2NewHandler.prototype = {
   initialize: function() {
@@ -99,4 +100,4 @@ GlideList2SecurityHandler.prototype = {
     return true;
   },
   type: 'GlideList2SecurityHandler'
-};
+};;

@@ -1,13 +1,7 @@
+/*! RESOURCE: /scripts/popups.js */
 var popupCurrent = null;
 var lastMouseX;
 var lastMouseY;
-var helpWindow = null;
-var beenFocused = false;
-document.onmousedown = markFocused;
-
-function markFocused() {
-  beenFocused = true;
-}
 if (window.opener && !window.opener.closed && window.opener != window.self) {
   Event.observe(window, 'beforeunload', function() {
     if (window.opener && !window.opener.closed && window.opener.popupCurrent && window.opener.popupCurrent == window.self)
@@ -16,7 +10,7 @@ if (window.opener && !window.opener.closed && window.opener != window.self) {
 }
 
 function popupClose() {
-  if (popupCurrent == null)
+  if (!popupCurrent)
     return;
   try {
     if (!popupCurrent.closed)
@@ -26,7 +20,8 @@ function popupClose() {
 }
 
 function mousePositionSave(e) {
-  if (navigator.appName.indexOf("Microsoft") != -1) e = window.event;
+  if (navigator.appName.indexOf("Microsoft") != -1)
+    e = window.event;
   lastMouseX = e.screenX;
   lastMouseY = e.screenY;
 }
@@ -41,9 +36,8 @@ function imageListOpen(elementName, img_dirs, ignore, name) {
 }
 
 function imageBrowseOpen(elementName, directory, name, color, icon) {
-  if (!color) {
+  if (!color)
     color = "color-normal";
-  }
   var url = new GlideURL("icon_browse.do");
   url.addParam("sysparm_dir", directory);
   url.addParam("sysparm_name", name || "");
@@ -139,7 +133,7 @@ function showPopupLiveFeedList(sysId, table) {
   var box = GlideBox.get('showLiveFeed');
   if (box)
     box.close(0);
-  var iframe_src = 'show_live_feed.do?sysparm_sys_id=' + sysId + '&sysparm_table=' + table;
+  var iframe_src = 'show_live_feed.do?sysparm_stack=no&sysparm_sys_id=' + sysId + '&sysparm_table=' + table;
   box = new GlideBox({
     id: 'showLiveFeed',
     iframe: iframe_src,
@@ -166,7 +160,6 @@ function emailClientOpenPop(table, immediate, replyType, replyID, addOn) {
   url.addParam("sysparm_table", table);
   url.addParam("sysparm_sys_id", id.value);
   url.addParam("sysparm_target", table);
-  url.addParam("sysparm_domain_restore", "false");
   if (replyType != null) {
     url.addParam("replytype", replyType);
     url.addParam("replyid", replyID);
@@ -175,6 +168,7 @@ function emailClientOpenPop(table, immediate, replyType, replyID, addOn) {
 }
 
 function reflistPick(elementName, value, display) {
+  "use strict";
   var listName = "select_0" + elementName;
   var list = $(listName);
   if (list) {
@@ -295,7 +289,7 @@ function picklistPick(elementName, value) {
 }
 
 function popupOpenStandard(url, name) {
-  var width = 700;
+  var width = document.documentElement.getAttribute('data-doctype') == 'true' ? 800 : 700;
   var height = 480;
   var features = "width=" + width + ",height=" + height + ",toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollbars=1";
   popupOpen(url, name, width, height, features, true);
@@ -314,6 +308,14 @@ function popupOpen(url, name, pWidth, pHeight, features, snapToLastMousePosition
 
 function popupOpenFocus(url, name, pWidth, pHeight, features, snapToLastMousePosition, closeOnLoseFocus) {
   popupClose();
+  if (url.indexOf("?") != -1)
+    url += "&";
+  else
+    url += "?";
+  url += "sysparm_domain_restore=false";
+  var domain = gel("sysparm_domain");
+  if (domain)
+    url += "&sysparm_domain=" + domain.value;
   if (url.indexOf("sysparm_nameofstack") == -1)
     url += "&sysparm_stack=no";
   if (snapToLastMousePosition) {
@@ -373,7 +375,7 @@ function htmlView(ref, id) {
     "width=" + w + ",height=" + h + ",toolbar=no,status=no,directories=no,menubar=no,resizable=yes,scrollbars=1");
 }
 
-function tearOffReference(table, fieldName, view, navigate) {
+function tearOffReference(table, fieldName, view, navigate, refKey) {
   var widget = gel(fieldName);
   if (widget == null) {
     alert('Tear off called for a non existent reference field');
@@ -384,16 +386,18 @@ function tearOffReference(table, fieldName, view, navigate) {
     alert('Please select a reference before trying to tear it off');
     return false;
   }
-  tearOff(table, sys_id, view, navigate);
+  tearOff(table, sys_id, view, navigate, refKey);
 }
 
-function tearOff(table, sys_id, view, navigate) {
+function tearOff(table, sys_id, view, navigate, refKey) {
   var key = sys_id;
   var url = new GlideURL(table + '.do');
   url.addParam("sys_id", key);
   url.addParam("sysparm_view", view);
   url.addParam("sysparm_stack", "no");
   url.addParam("sysparm_referring_url", "tear_off");
+  if (refKey)
+    url.addParam("sysparm_refkey", refKey);
   window.open(url.getURL(), "",
     "toolbar=no,menubar=no,personalbar=no,width=800,height=600," +
     "scrollbars=yes,resizable=yes");
@@ -410,4 +414,4 @@ function tearOffAttachment(sys_id) {
   window.open(url.getURL(), sys_id,
     "toolbar=no,menubar=no,personalbar=no,width=800,height=600," +
     "scrollbars=yes,resizable=yes");
-}
+};

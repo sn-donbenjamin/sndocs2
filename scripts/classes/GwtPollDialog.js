@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GwtPollDialog.js */
 var GwtPollDialog = Class.create(GlideDialogWindow, {
   initialize: function(tableName, query, rows, view, action) {
     GlideDialogWindow.prototype.initialize.call(this, 'export_poll_dialog');
@@ -123,4 +124,4 @@ var GwtPollDialog = Class.create(GlideDialogWindow, {
       g_poll_dialog = null;
     return g_poll_dialog == null;
   }
-});
+});;

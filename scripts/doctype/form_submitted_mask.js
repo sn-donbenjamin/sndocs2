@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/doctype/form_submitted_mask.js */
 addLoadEvent(function() {
   var isDoctype = document.documentElement.getAttribute('data-doctype') == 'true';
   if (!isDoctype)
@@ -11,7 +12,15 @@ addLoadEvent(function() {
   CustomEvent.observe('glide:nav_form_stay', function(originWindow) {
     var ga = new GlideAjax('AJAXFormLoad');
     ga.addParam('sysparm_name', 'canFormReload');
-    ga.getXML(function() {
+    if (window.g_form && g_form.isNewRecord()) {
+      ga.addParam('sysparm_table', g_form.getTableName());
+      ga.addParam('sysparm_sys_id', g_form.getUniqueValue());
+    }
+    ga.getXMLAnswer(function(answer) {
+      if (answer == 'submitted') {
+        jslog("Record already submitted, not re-enabling form controls");
+        return;
+      }
       enableFormControls(originWindow);
     })
   });
@@ -25,4 +34,4 @@ addLoadEvent(function() {
     if (window.g_submitted)
       g_submitted = false;
   }
-})
+});

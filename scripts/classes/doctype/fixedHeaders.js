@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/doctype/fixedHeaders.js */
 CustomEvent.observe('list2_init', function(list2) {
   if (typeof $j == 'undefined')
     return;
@@ -17,40 +18,50 @@ CustomEvent.observe('list2_init', function(list2) {
       $j("#clone_column_headers").remove();
     }
     var $origHeader = $j('thead', tableId).first();
-    var $pageHeader = $j('tr.list_nav_top.list_nav').first();
-    var pageHeaderHeight = $pageHeader.height();
+    var $pageHeader = $j('nav.list_nav_top.list_nav').first();
+    var pageHeaderHeight = $pageHeader.outerHeight();
     $pageHeader.css({
       'position': 'fixed',
       'width': '100%',
       'top': 0,
       'z-index': 10
     });
-    $j('tr.list_nav_spacer').css({
-      'height': pageHeaderHeight,
-      'display': 'table-row'
-    })
+    var navbar = $j('nav.navbar');
+    var navbarMarginTop = navbar.outerHeight() + parseInt(navbar.css('padding-bottom')) - parseInt(navbar.css('border-bottom-width'));
+    $j('.list_nav_spacer').css({
+      marginTop: navbarMarginTop,
+      'display': 'block'
+    });
     var $header = $origHeader.first().clone();
-    $cloneTable = $j(tableId).clone();
+    var $originalTable = $j($j('table', tableId)[0].cloneNode(false));
+    $originalTable.empty();
+    $originalTable.removeClass('list_table list_header_search');
+    $originalTable.attr('id', 'table_clone');
+    $originalTable.append($header);
+    $cloneTable = $j($j(tableId)[0].cloneNode(false));
     $cloneTable.empty();
-    $cloneTable.append($header);
+    $cloneTable.append($originalTable);
     $cloneTable.attr('id', 'clone_table');
     $cloneTable.removeClass("list_table").addClass('list_table_clone');
     $cloneTable.css({
       'position': 'fixed',
       'width': $j(tableId).width(),
       'display': 'none',
-      'top': pageHeaderHeight
+      'top': pageHeaderHeight,
+      'z-index': 10
     });
     $j(".list_v2").first().prepend($cloneTable);
     var originalHeaders = $j('thead th', tableId);
     var cloneHeaders = $j('#clone_table thead th');
     var widths = [];
-    $j.each(originalHeaders, function() {
-      widths.push($j(this).width());
-    });
-    $j.each(cloneHeaders, function(index, value) {
-      $j(this).css({
-        'width': widths[index]
+    addAfterPageLoadedEvent(function() {
+      $j.each(originalHeaders, function() {
+        widths.push($j(this).outerWidth());
+      });
+      $j.each(cloneHeaders, function(index, value) {
+        $j(this).css({
+          'width': widths[index]
+        });
       });
     });
     if (enableStickyColumns) {
@@ -106,8 +117,12 @@ CustomEvent.observe('list2_init', function(list2) {
     }
     var scrollLeft = $j(document).scrollLeft();
     var margin = parseInt($j("body").css('margin-left'));
-    var scrollTop = $j(window).scrollTop() + $j('tr.list_nav_top.list_nav').height();
+    var navHeader = $j('nav.list_nav_top.list_nav');
+    var topBorder = parseInt(navHeader.css('borderTopWidth'), 10);
+    var botBorder = parseInt(navHeader.css('borderBottomWidth'), 10);
+    var scrollTop = $j(window).scrollTop() + (navHeader.outerHeight() - navHeader.height() + topBorder + botBorder);
     var offset = $table.offset();
+    var breadcrumbOffset = $j('.breadcrumb_container').height();
     if (g_text_direction == "rtl") {
       $cloneTable.css({
         "right": margin + scrollLeft
@@ -129,7 +144,7 @@ CustomEvent.observe('list2_init', function(list2) {
         $columnHeaders.css("left", 0);
       }
     }
-    if ((scrollTop > offset.top) && (offset.top + $table.height() > scrollTop)) {
+    if ((scrollTop > offset.top - breadcrumbOffset) && (offset.top - breadcrumbOffset + $table.height() > scrollTop)) {
       $cloneTable.css('display', 'block');
       if (enableStickyColumns) {
         $columnHeaders.css('display', 'block');
@@ -141,17 +156,25 @@ CustomEvent.observe('list2_init', function(list2) {
       }
     }
   }
-  cloneHeader();
-  $j(window).scroll(checkPosition).trigger("scroll");
+  var eventSet = false;
+  var cloneTimeout;
 
-  function reclone(tableEl, list) {
-    if (list && list.getRelated())
-      return;
-    cloneHeader();
-    checkPosition();
+  function reclone(event) {
+    clearTimeout(cloneTimeout);
+    cloneTimeout = setTimeout(function() {
+      var sw = new StopWatch();
+      cloneHeader();
+      checkPosition();
+      if (!eventSet)
+        $j(window).scroll(checkPosition).trigger("scroll");
+      eventSet = true;
+      sw.jslog("Reclone headers");
+    }, 100);
   }
-  CustomEvent.observe('listheadersearch.show_hide', reclone);
-  CustomEvent.observe('fontsize.change', reclone);
-  $j(window).resize(reclone);
   CustomEvent.observe('list.loaded', reclone);
-});
+  CustomEvent.observe('list2_init', reclone);
+  CustomEvent.observe('listheadersearch.show_hide', reclone);
+  CustomEvent.observe('compact', reclone);
+  $j(window).load(reclone);
+  $j(window).resize(reclone);
+});;

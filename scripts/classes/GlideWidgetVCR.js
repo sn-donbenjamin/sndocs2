@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideWidgetVCR.js */
 var GlideWidgetVCR = Class.create(GlideListWidget, {
   initialize: function($super, widgetID, listID) {
     $super(widgetID, listID);
@@ -72,11 +73,15 @@ var GlideWidgetVCR = Class.create(GlideListWidget, {
     }
   },
   _setRowNumbers: function(list) {
-    var spans = this.span.getElementsByTagName("SPAN");
-    spans[1].innerHTML = list.lastRow;
-    spans[2].innerHTML = list.totalRows
-    var input = this.span.getElementsByTagName("INPUT");
-    input[0].value = list.firstRow;
+    var lastRow = $(this.widgetID + '_last_row'),
+      totalRows = $(this.widgetID + '_total_rows'),
+      firstRow = $(this.widgetID + '_first_row');
+    if (lastRow)
+      lastRow.innerHTML = list.lastRow;
+    if (totalRows)
+      totalRows.innerHTML = list.totalRows;
+    if (firstRow)
+      firstRow.value = list.firstRow;
   },
   _setAction: function(img, allowed) {
     if (img.tagName.toLowerCase() == "img") {
@@ -141,4 +146,4 @@ var GlideWidgetVCR = Class.create(GlideListWidget, {
       list.setOrderBy(orderBy);
   },
   type: 'GlideWidgetVCR'
-});
+});;

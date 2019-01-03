@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/ac_derived_field_support.js */
 function refFieldChangeResponse(request, args) {
   if (request == null)
     return;
@@ -44,4 +45,4 @@ function setNodes(sName, array, request) {
       g_form._removeDerivedWaiting(eln);
     }
   }
-}
+};

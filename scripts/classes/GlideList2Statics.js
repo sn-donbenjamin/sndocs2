@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideList2Statics.js */
 var GlideLists2 = {};
 GlideList2.LIST_BODY_START = "<!--LIST_BODY_START-->";
 GlideList2.LIST_BODY_END = "<!--LIST_BODY_END-->";
@@ -90,9 +91,10 @@ GlideList2.updateCellContents = function(cell, data) {
   cell.innerHTML = '';
   for (var child = data.firstChild; child; child = child.nextSibling) {
     work.innerHTML = getXMLString(child);
-    cell.appendChild(work.firstChild);
+    if (work.firstChild !== null)
+      cell.appendChild(work.firstChild);
   }
   cell.innerHTML.evalScripts(true);
   cell.removeClassName('list_edit_dirty');
   CustomEvent.fire("list_cell_changed", cell);
-}
+};

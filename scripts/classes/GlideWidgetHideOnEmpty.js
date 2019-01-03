@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideWidgetHideOnEmpty.js */
 var GlideWidgetHideOnEmpty = Class.create(GlideListWidget, {
   initialize: function($super, widgetID, listID) {
     $super(widgetID, listID);
@@ -14,4 +15,4 @@ var GlideWidgetHideOnEmpty = Class.create(GlideListWidget, {
     }
   },
   type: 'GlideWidgetHideOnEmpty'
-});
+});;

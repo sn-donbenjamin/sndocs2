@@ -1,3 +1,4 @@
+/*! RESOURCE: /scripts/classes/GlideList2FilterUtil.js */
 function runFilterV2Lists(name, filter) {
   var list = GlideList2.get(name);
   if (!list) {
@@ -35,4 +36,4 @@ GlideList2.saveFilter = function(listID, listName) {
 GlideList2.setDefaultFilter = function(listID, listName) {
   var filter = getFilter(listName, false);
   GlideList2.get(listID).setDefaultFilter(filter);
-}
+};
