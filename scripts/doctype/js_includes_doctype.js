@@ -26681,8 +26681,13 @@ var AttachmentUploader = Class.create({
         var xml = self.xhr.responseXML;
         if (xml) {
           var sys_id = xml.documentElement.getAttribute("sys_id");
+<<<<<<< HEAD
           if (sys_id == "attachment.refused") {
             alert("Attachment refused because file type not allowed or type does not match file contents.");
+=======
+          if (!sys_id) {
+            alert("Attachment failed because file type does not match with file contents.");
+>>>>>>> master
           } else if (sys_id == "create.permission") {
             alert("You do not have ability to attach file to this record.");
           } else if (sys_id == "upload.error") {
@@ -32638,6 +32643,7 @@ SN.formAnnotations = {
   }
   window.$j = window.$j_glide = jQuery.noConflict();
 })();;;
+<<<<<<< HEAD
 /*! RESOURCE: scripts/OpticsInspector.js */
 var OpticsInspector = Class
   .create({
@@ -33263,6 +33269,8 @@ TestClient.prototype = {
   },
   type: 'TestClient'
 };;
+=======
+>>>>>>> master
 /*! RESOURCE: scripts/classes/WFStageSet.js */
 var WFStageSet = (function() {
   function getWorkflowVersionFromQuery(qry) {
@@ -33627,6 +33635,7 @@ function removeLabelByName(labelName, sysId) {
   aj.getXML(refreshNavIfNotDoctypeUI);
 }
 
+<<<<<<< HEAD
 function removeLabelById(labelId, sysId) {
   var aj = new GlideAjax("LabelsAjax");
   aj.addParam("sysparm_name", labelId);
@@ -33691,6 +33700,459 @@ function refreshNavIfNotDoctypeUI() {
   if (!isDoctype)
     refreshNav();
 };
+=======
+function removeLabelById(labelId, sysId) {
+  var aj = new GlideAjax("LabelsAjax");
+  aj.addParam("sysparm_name", labelId);
+  aj.addParam("sysparm_value", sysId);
+  aj.addParam("sysparm_type", 'remove');
+  aj.getXML(refreshNavIfNotDoctypeUI);
+}
+
+function removeLabelResponse(response, args) {
+  var labelId = response.responseXML.documentElement.getAttribute("sysparm_name");
+  if (!labelId)
+    refreshNavIfNotDoctypeUI();
+  else {
+    var labelIds = new Array();
+    labelIds.push(labelId);
+    labelsGetRequest(labelIds);
+  }
+}
+
+function newLabelPromptListAction(tableName, listId) {
+  var nonDoctypeUICallback = function(labelName) {
+    assignLabelToCheckedSysIds(labelName, tableName, listId)
+  };
+  var list = GlideList2.get(listId);
+  if (!list)
+    return;
+  var sysIds = list.getChecked();
+  if (!sysIds)
+    return;
+  newLabel(tableName, sysIds, nonDoctypeUICallback);
+}
+
+function assignLabelToCheckedSysIds(labelName, tableName, listId) {
+  if (!labelName || labelName.strip() == '')
+    return;
+  var list = GlideList2.get(listId);
+  if (!list)
+    return;
+  var sysIds = list.getChecked();
+  if (!sysIds)
+    return;
+  assignLabel(labelName, tableName, sysIds, list.getView());
+}
+
+function removeLabelFromCheckedSysIds(labelName, listId) {
+  var list = GlideList2.get(listId);
+  var sysIds = list.getChecked();
+  if (!sysIds)
+    return;
+  removeLabelByName(labelName, sysIds);
+}
+
+function getFormByTableName(tableName) {
+  var form = getControlForm(tableName);
+  if (!form)
+    form = document.forms[tableName + '.do'];
+  return form;
+}
+
+function refreshNavIfNotDoctypeUI() {
+  var isDoctype = document.documentElement.getAttribute("data-doctype") == "true";
+  if (!isDoctype)
+    refreshNav();
+};
+/*! RESOURCE: scripts/OpticsInspector.js */
+var OpticsInspector = Class
+  .create({
+    CATEGORIES: {
+      "sys_script": "BUSINESS RULE",
+      "sys_script_client": "CLIENT SCRIPT",
+      "data_lookup": "DATA LOOKUP",
+      "sys_data_policy2": "DATA POLICY",
+      "ui_policy": "UI POLICY",
+      "wf_context": "WORKFLOW",
+      "request_action": "REQUEST ACTION",
+      "script_engine": "SCRIPT ENGINE",
+      "wf_activity": "WORKFLOW ACTIVITY",
+      "acl": "ACL",
+      "sys_ui_action": "UI ACTION",
+      "reference_qual": "REFERENCE QUALIFIER QUERY"
+    },
+    initialize: function() {
+      this.opticsContextStack = new Array();
+      this.tableName = null;
+      this.fieldName = null;
+      this.enabled = false;
+    },
+    pushOpticsContext: function(category, name, sys_id) {
+      if (this.isInspecting())
+        this.opticsContextStack.push({
+          "category": category,
+          "name": name,
+          "sys_id": sys_id
+        });
+    },
+    popOpticsContext: function() {
+      if (this.isInspecting() && this.opticsContextStack.length > 0)
+        return this.opticsContextStack.pop();
+      return null;
+    },
+    isInspecting: function(tableName, fieldName) {
+      if (this.tableName == null && this.fieldName == null)
+        return false;
+      if (arguments.length == 0)
+        return (this.tableName && this.tableName.length > 0 &&
+          this.fieldName && this.fieldName.length > 0);
+      if (arguments.length == 2)
+        return tableName == this.tableName &&
+          fieldName == this.fieldName;
+      return false;
+    },
+    getTableName: function() {
+      return (this.tableName && this.tableName.length > 0) ? this.tableName :
+        '';
+    },
+    getFieldName: function() {
+      return (this.fieldName && this.fieldName.length > 0) ? this.fieldName :
+        '';
+    },
+    hideWatchIcons: function() {
+      if (isDoctype()) {
+        $$(".icon-debug.watch_icon").each(function(element) {
+          $(element).hide()
+        });
+      } else {
+        $$("img.watch_icon").each(function(element) {
+          $(element).hide()
+        });
+      }
+    },
+    addWatchIcon: function(watchField) {
+      var td = $('label.' + watchField);
+      var icon;
+      if (td) {
+        if (isDoctype()) {
+          var label = td.select('label');
+          icon = '<span class="label-icon icon-debug watch_icon" id="' +
+            watchField +
+            '.watch_icon"' +
+            ' onclick="CustomEvent.fireTop(\'showFieldWatcher\')" ' +
+            ' src="images/debug.gifx" ' +
+            ' alt="Field is being watched"' +
+            ' title="Field is being watched"></span>';
+          if (label) {
+            $(label[0]).insert(icon);
+          }
+        } else {
+          icon = '<img class="watch_icon" id="' +
+            watchField +
+            '.watch_icon"' +
+            ' onclick="CustomEvent.fireTop(\'showFieldWatcher\')" ' +
+            ' src="images/debug.gifx" ' +
+            ' alt="Field is being watched"' +
+            ' title="Field is being watched" />';
+          td.insert(icon);
+        }
+      }
+    },
+    clearWatchField: function(watchfield) {
+      this.opticsContextStack = new Array();
+      this.tableName = null;
+      this.fieldName = null;
+      this.hideWatchIcons();
+      var debuggerTools = getTopWindow().debuggerTools;
+      if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+        var wndw = debuggerTools.getJsDebugWindow();
+        if (wndw.updateFieldInfo)
+          wndw.updateFieldInfo(null);
+      } else {
+        debuggerTools = parent.parent.debuggerTools;
+        if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+          var wndw = debuggerTools.getJsDebugWindow();
+          if (wndw.updateFieldInfo)
+            wndw.updateFieldInfo(null);
+        }
+      }
+    },
+    setWatchField: function(watchField) {
+      if (!watchField)
+        return;
+      var fieldParts = watchField.split(".");
+      if (!(fieldParts.length == 2 && fieldParts[0].length > 0 && fieldParts[1].length > 0))
+        return;
+      this.tableName = fieldParts[0];
+      this.fieldName = fieldParts[1];
+      this.hideWatchIcons();
+      var icon = $(watchField + ".watch_icon");
+      if (icon) {
+        icon.show();
+      } else {
+        this.addWatchIcon(watchField);
+      }
+      var debuggerTools = getTopWindow().debuggerTools;
+      if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+        var wndw = debuggerTools.getJsDebugWindow();
+        if (wndw.updateFieldInfo)
+          wndw.updateFieldInfo(watchField);
+      } else {
+        debuggerTools = parent.parent.debuggerTools;
+        if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+          var wndw = debuggerTools.getJsDebugWindow();
+          if (wndw.updateFieldInfo)
+            wndw.updateFieldInfo(watchField);
+        }
+      }
+    },
+    showWatchField: function(watchField) {
+      var debuggerTools = getTopWindow().debuggerTools;
+      if (debuggerTools) {
+        if (!debuggerTools.isDebugPanelVisible())
+          debuggerTools.showFieldWatcher();
+        setWatchField(watchField);
+      } else {
+        debuggerTools = parent.parent.debuggerTools;
+        if (debuggerTools) {
+          if (!debuggerTools.isDebugPanelVisible())
+            debuggerTools.showFieldWatcher();
+          setWatchField(watchField);
+        }
+      }
+    },
+    processClientMessage: function(notification) {
+      var opticsContext = this.opticsContextStack[this.opticsContextStack.length - 1]
+      var info = {
+        type: 'CLIENT ',
+        message: notification.message,
+        message_type: "static",
+        category: opticsContext.category,
+        name: opticsContext.name,
+        level: this.opticsContextStack.length,
+        time: getFormattedTime(new Date()),
+        call_trace: this._getCallTrace(this.opticsContextStack),
+        sys_id: opticsContext["sys_id"]
+      };
+      if (notification["oldvalue"] && notification["newvalue"]) {
+        info.message_type = "change";
+        info.oldvalue = notification["oldvalue"];
+        info.newvalue = notification["newvalue"];
+      }
+      this.process(info);
+    },
+    processServerMessages: function() {
+      var spans = $$('span[data-type="optics_debug"]');
+      for (var i = 0; i < spans.length; i++) {
+        var notification = new GlideUINotification({
+          xml: spans[i]
+        });
+        this.processServerMessage(notification);
+        spans[i].setAttribute("data-attr-processed", "true");
+      }
+    },
+    processServerMessage: function(notification) {
+      if (notification.getAttribute('processed') == "true")
+        return;
+      var info = {
+        type: 'SERVER',
+        category: notification.getAttribute('category'),
+        name: notification.getAttribute('name'),
+        message: notification.getAttribute('message'),
+        message_type: notification.getAttribute('message_type'),
+        oldvalue: notification.getAttribute('oldvalue'),
+        newvalue: notification.getAttribute('newvalue'),
+        level: notification.getAttribute('level'),
+        time: notification.getAttribute('time'),
+        sys_id: notification.getAttribute('sys_id'),
+        call_trace: this._getCallTrace(eval(notification
+          .getAttribute('call_trace')))
+      };
+      this.process(info);
+    },
+    process: function(notification) {
+      var msg = '<div class="debug_line ' + notification['category'] + '">' + this._getMessage(notification) + '</div>';
+      this._log(msg);
+    },
+    addLine: function() {
+      this._log('<hr class="logs-divider"/>');
+    },
+    openScriptWindow: function(tablename, sysid) {
+      if (tablename && sysid) {
+        if (tablename == "request_action")
+          tablename = "sys_ui_action";
+        var url = "/" + tablename + ".do?sys_id=" + sysid;
+        window.open(url, "tablewindow");
+      }
+    },
+    _log: function(msg) {
+      var debuggerTools = getTopWindow().debuggerTools;
+      if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+        var wndw = debuggerTools.getJsDebugWindow();
+        if (wndw.insertJsDebugMsg)
+          wndw.insertJsDebugMsg(msg);
+      } else {
+        debuggerTools = parent.parent.debuggerTools;
+        if (debuggerTools && debuggerTools.isDebugPanelVisible()) {
+          var wndw = debuggerTools.getJsDebugWindow();
+          if (wndw.insertJsDebugMsg)
+            wndw.insertJsDebugMsg(msg);
+        }
+      }
+    },
+    _getCallTrace: function(contextStack) {
+      var trace = '';
+      var arrows = '<span class="rtl-arrow"> &larr;</span><span class="lrt-arrow">&rarr; </span>';
+      var space = arrows;
+      for (i = 0, maxi = contextStack.length; i < maxi; i++) {
+        var context = contextStack[i];
+        if (i > 0)
+          space = arrows + space;
+        if (context['name'] && context['name'].length > 0)
+          trace += '<div>' + space +
+          this._getCategoryName(context['category']) +
+          '&nbsp;-&nbsp;' + context['name'] + '</div>';
+        else
+          trace += '<div>' + space +
+          this._getCategoryName(context['category']) +
+          '</div>';
+      }
+      if (trace && trace.length > 0)
+        trace = '<div class="call_trace">' + trace + '</div>';
+      return trace;
+    },
+    _getMessage: function(notification) {
+      var notif_type = notification['type'];
+      var legend_title = (notif_type.indexOf('CLIENT') > -1) ? 'Client-side activity' :
+        'Server-side activity';
+      var msg = '<span class="expand-button" onclick="toggleCallTrace(this);">&nbsp;</span>';
+      msg += '<img class="infoIcon" height="16"  width="16" border="0" src="images/info-icon.png" title="' +
+        legend_title + '" alt="' + legend_title + '">';
+      msg += '<span class="log-time ' + notif_type + '">' +
+        notification['time'] + '</span>';
+      msg += '<span class="log-category">' +
+        this.CATEGORIES[notification['category']];
+      if (notification['name'] && notification['name'].length > 0) {
+        if (notification["sys_id"])
+          msg += '&nbsp;-&nbsp;<a data-tablename="' +
+          notification['category'] +
+          '" data-sys_id="' +
+          notification['sys_id'] +
+          '" onclick="javascript:openScriptWindow(this);">' +
+          notification['name'] + '</a></span>';
+        else
+          msg += '&nbsp;-&nbsp;' + notification['name'] +
+          '</span>';
+      } else
+        msg += '</span>';
+      msg += '<span class="log-value">';
+      if ("request_action" === notification['category']) {
+        msg += 'Value received from client is: <span class="value" title="Value">' +
+          notification['message'] + '</span>';
+      } else if (notification["message_type"] == "change") {
+        msg += '<span>' +
+          notification["oldvalue"] +
+          '</span><span class="rtl-arrow"> &larr; </span><span class="lrt-arrow"> &rarr; </span><span>' +
+          notification["newvalue"] + '</span>';
+      } else {
+        msg += notification['message'];
+      }
+      msg += '</span>';
+      msg += notification['call_trace'];
+      return msg;
+    },
+    _getCategoryName: function(category) {
+      var name = this.CATEGORIES[category];
+      if (name === 'undefined' || name === null)
+        name = category;
+      return name;
+    },
+    _getLevelStr: function(level) {
+      if (level == 'undefined' || level == null || level <= 0)
+        level = 1;
+      var levelStr = '';
+      for (i = 0; i < level; i++)
+        levelStr += '-';
+      return levelStr + '>';
+    },
+    toString: function() {
+      return 'OpticsInspector';
+    }
+  });
+var g_optics_inspect_handler = new OpticsInspector();
+OpticsInspector.WATCH_EVENT = 'glide:ui_notification.optics_debug';
+OpticsInspector.WATCH_EVENT_UI = 'glide:ui_notification.optics_debug_ui';
+OpticsInspector.WATCH_FIELD = 'glide_optics_inspect_watchfield';
+OpticsInspector.SHOW_WATCH_FIELD = 'glide_optics_inspect_watchfield';
+OpticsInspector.UPDATE_WATCH_FIELD = 'glide_optics_inspect_update_watchfield';
+OpticsInspector.CLEAR_WATCH_FIELD = 'glide_optics_inspect_clear_watchfield';
+OpticsInspector.SHOW_WATCH_FIELD = 'glide_optics_inspect_show_watchfield';
+OpticsInspector.PUT_CONTEXT = 'glide_optics_inspect_put_context';
+OpticsInspector.POP_CONTEXT = 'glide_optics_inspect_pop_context';
+OpticsInspector.PUT_CS_CONTEXT = 'glide_optics_inspect_put_cs_context';
+OpticsInspector.POP_CS_CONTEXT = 'glide_optics_inspect_pop_cs_context';
+OpticsInspector.PUT_CONTEXT = 'glide_optics_inspect_put_context';
+OpticsInspector.POP_CONTEXT = 'glide_optics_inspect_pop_context';
+OpticsInspector.LOG_MESSAGE = 'glide_optics_inspect_log_message';
+OpticsInspector.WINDOW_OPEN = 'glide_optics_inspect_window_open';
+
+function getClientScriptContextName(name, type) {
+  var csname = null;
+  if (type === "submit")
+    csname = g_event_handlers_onSubmit[name];
+  else if (type === "load")
+    csname = g_event_handlers_onLoad[name];
+  else if (type === "change")
+    csname = g_event_handlers_onChange[name];
+  return csname;
+}
+CustomEvent.observe(OpticsInspector.PUT_CONTEXT, function(category, name) {
+  g_optics_inspect_handler.pushOpticsContext(category, name);
+});
+CustomEvent.observe(OpticsInspector.POP_CONTEXT, function() {
+  g_optics_inspect_handler.popOpticsContext();
+});
+CustomEvent.observe(OpticsInspector.PUT_CS_CONTEXT, function(name, type) {
+  var csname = getClientScriptContextName(name, type);
+  if (csname)
+    g_optics_inspect_handler.pushOpticsContext("sys_script_client", csname,
+      g_event_handler_ids[name]);
+});
+CustomEvent.observe(OpticsInspector.POP_CS_CONTEXT, function(name, type) {
+  var csname = getClientScriptContextName(name, type);
+  if (csname)
+    g_optics_inspect_handler.popOpticsContext();
+});
+CustomEvent.observe(OpticsInspector.LOG_MESSAGE, function(notification) {
+  if (g_optics_inspect_handler.isInspecting(notification["table"],
+      notification["field"])) {
+    g_optics_inspect_handler.processClientMessage(notification);
+  }
+});
+CustomEvent.observe(OpticsInspector.WATCH_EVENT_UI, function(notification) {
+  g_optics_inspect_handler.process(notification);
+});
+CustomEvent.observe(OpticsInspector.WATCH_EVENT, function(notification) {
+  g_optics_inspect_handler.processServerMessage(notification);
+});
+CustomEvent.observe(OpticsInspector.WATCH_FIELD, function(watchfield) {
+  g_optics_inspect_handler.setWatchField(watchfield);
+});
+CustomEvent.observe(OpticsInspector.SHOW_WATCH_FIELD, function(watchfield) {
+  g_optics_inspect_handler.showWatchField(watchfield);
+});
+CustomEvent.observe(OpticsInspector.CLEAR_WATCH_FIELD, function(watchfield) {
+  g_optics_inspect_handler.clearWatchField(watchfield);
+});
+CustomEvent.observe(OpticsInspector.UPDATE_WATCH_FIELD, function(watchfield) {
+  g_optics_inspect_handler.setWatchField(watchfield);
+  if (window.name !== "jsdebugger") {
+    g_optics_inspect_handler.addLine();
+    g_optics_inspect_handler.processServerMessages();
+  }
+});;
+>>>>>>> master
 /*! RESOURCE: scripts/Uploader.js */
 var Uploader = Class.create({
   initialize: function(containerName, tableName, sys_id) {
@@ -34088,6 +34550,247 @@ GlideMenu.addScripts = function(o) {
   for (var s in o.onScripts)
     GlideMenu.onScripts[s] = o.onScripts[s];
 };
+<<<<<<< HEAD
+=======
+/*! RESOURCE: scripts/TestClient.js */
+function popTestClient(test_definition, test_subject) {
+  var test_execution;
+  if (!test_subject)
+    test_execution = test_definition;
+  var dialog = new GlideDialogWindow('test_client', false, "50em", "25em");
+  if (test_execution) {
+    dialog.setPreference('sysparm_test_execution', test_execution);
+  } else {
+    dialog.setPreference('sysparm_test_definition', test_definition);
+    dialog.setPreference('sysparm_test_subject', test_subject);
+  }
+  dialog.render();
+}
+var TestClient = Class.create();
+TestClient.prototype = {
+  TEST_STATES: ["Pending", "Running", "Succeeded", "Failed"],
+  STATUS_IMAGES: ["images/workflow_skipped.gif",
+    "images/loading_anim2.gifx", "images/workflow_complete.gifx",
+    "images/workflow_rejected.gifx"
+  ],
+  TRANSLATED_TEXT: ["Pending", "Running", "Succeeded", "Failed",
+    "Details", "more", "Hide Details", "Show Details"
+  ],
+  TIMEOUT_INTERVAL: 1000,
+  translator: new GwtMessage(),
+  detailStates: {},
+  id: "",
+  container: null,
+  initialize: function(test_definition, test_subject) {
+    this.container = $("container");
+    this._setContainerStyles(this.container);
+    this.translator.getMessages(this.TRANSLATED_TEXT);
+    var test_execution;
+    if (!test_subject) {
+      this.id = test_definition
+      return
+    }
+    this.testDefinition = test_definition;
+    this.testSubject = test_subject;
+  },
+  start: function() {
+    if (this.id) {
+      this.getStatus();
+      return;
+    }
+    var ga = new GlideAjax('AJAXTestProcessor');
+    ga.addParam('sysparm_name', 'startTest');
+    ga.addParam('sysparm_test_definition', this.testDefinition);
+    ga.addParam('sysparm_test_subject', this.testSubject);
+    ga.getXML(this.handleStart.bind(this));
+  },
+  handleStart: function(response) {
+    this.id = response.responseXML.documentElement.getAttribute("answer");
+    this.getStatus();
+  },
+  getStatus: function() {
+    var ga = new GlideAjax('AJAXTestProcessor');
+    ga.addParam('sysparm_name', 'getStatus');
+    ga.addParam('sysparm_execution_id', this.id);
+    if (typeof this.id != "string" || this.id == "")
+      return;
+    ga.getXML(this.handleGetStatus.bind(this));
+  },
+  handleGetStatus: function(response) {
+    var answer = response.responseXML.documentElement.getAttribute("answer");
+    eval("var so = " + answer);
+    this.renderStatus(so);
+    this.container = $("container");
+    if (this.container == null)
+      return;
+    if (so.state == "0" || so.state == "1")
+      setTimeout(this.getStatus.bind(this), this.TIMEOUT_INTERVAL);
+  },
+  renderStatus: function(so) {
+    if (!so)
+      return;
+    var new_container = new Element("div");
+    this._setContainerStyles(new_container);
+    new_container.appendChild(this.getStatusRow(so));
+    this.container.replace(new_container);
+    this.container = new_container;
+  },
+  getStatusRow: function(obj, order) {
+    var name = obj.name;
+    var state = obj.state;
+    var message = obj.message;
+    var percent = NaN;
+    if (obj.percent_complete) {
+      percent = parseInt(obj.percent_complete);
+    }
+    var hasPercent = (!isNaN(percent) && percent > 0 && percent <= 100);
+    var hasDetails = (obj.results.length >= 1 || message != "");
+    var tr = new Element("div", {
+      id: "row_container-" + obj.sys_id
+    });
+    tr.style.padding = "5px";
+    var simp = new Element("div");
+    simp.appendChild(this._getImage(obj));
+    simp.appendChild(this._getItemTitleElement(name, order));
+    var det = this._getDetailElement();
+    var dtl;
+    if (hasDetails || hasPercent)
+      dtl = det.appendChild(this._getShowDetailsLink(obj.sys_id));
+    simp.appendChild(det);
+    simp.appendChild(this._getFloatClear("both"));
+    tr.appendChild(simp);
+    if (hasDetails || hasPercent) {
+      var dtd = new Element("div");
+      var ddc = new Element("div");
+      ddc.style.marginTop = ".5em";
+      ddc.style.marginLeft = "30px";
+      ddc.id = "detail_cont-" + obj.sys_id;
+      dtd.appendChild(ddc);
+      if (hasPercent) {
+        ddc.appendChild(this._getProgressBar(percent));
+        ddc.appendChild(this._getFloatClear("both"));
+      }
+      if (message != "") {
+        var dds = new Element("div");
+        dds.appendChild(this._getDetailsText(message, obj));
+        dds.style.fontSize = "smaller";
+        dds.style.marginBottom = ".5em";
+        ddc.appendChild(dds);
+      }
+      dtl.details_container = ddc;
+      if (typeof this.detailStates[obj.sys_id] == "boolean" && this.detailStates[obj.sys_id] == false && dtl != null)
+        dtl.onclick();
+      tr.appendChild(dtd);
+      this.renderChildren(obj, ddc);
+    }
+    return tr;
+  },
+  _getItemTitleElement: function(name, order) {
+    var nameHtml = "<b>" + name + "</b>";
+    if (order) {
+      nameHtml = "\t" + order + ".\t" + nameHtml;
+    }
+    var nsp = new Element("span");
+    nsp.innerHTML = nameHtml;
+    nsp.style.float = "left";
+    return nsp;
+  },
+  _getImage: function(obj) {
+    var state = obj.state;
+    var si = new Element("img");
+    si.id = "img-" + obj.sys_id;
+    si.src = this.STATUS_IMAGES[state];
+    si.style.marginRight = "10px";
+    si.style.float = "left";
+    si.title = this.TEST_STATES[state];
+    return si;
+  },
+  _getDetailElement: function() {
+    var det = new Element("span");
+    det.style.marginLeft = "10px";
+    det.style.float = "left";
+    return det;
+  },
+  _getShowDetailsLink: function(objSysID) {
+    var da = new Element("a");
+    da.id = objSysID;
+    da.controller = this;
+    da.innerHTML = "(" + this.translator.getMessage("Hide Details") + ")";
+    da.toggleText = "(" + this.translator.getMessage("Show Details") + ")";
+    da.style.fontSize = "8pt";
+    da.style.float = "left";
+    da.onclick = this.__detailsToggle;
+    return da;
+  },
+  __detailsToggle: function() {
+    var cont = this.details_container;
+    cont.toggle();
+    this.controller.detailStates[this.id] = cont.visible();
+    var nt = this.toggleText;
+    this.toggleText = this.innerHTML;
+    this.innerHTML = nt;
+  },
+  _getDetailsText: function(message, obj) {
+    if (message.length > 150) {
+      var new_message = new Element("span");
+      new_message.innerHTML = "<b>" +
+        this.translator.getMessage("Details") + ": </b>" +
+        message.slice(0, 150) + "... ";
+      var anch = new Element("a");
+      anch.href = "test_execution.do?sys_id=" + obj.sys_id;
+      anch.innerHTML = "<b>(" + this.translator.getMessage("more") +
+        ")</b>";
+      new_message.appendChild(anch);
+      return new_message;
+    } else {
+      var new_message = new Element("span")
+      new_message.innerHTML = "<b>" +
+        this.translator.getMessage("Details") + ": </b>" +
+        message;
+      return new_message;
+    }
+  },
+  _getProgressBar: function(percent) {
+    percent = Math.max(0, Math.min(100, percent));
+    var progressContainer = new Element("div");
+    progressContainer.style.width = "300px";
+    progressContainer.style.height = "8px";
+    progressContainer.style.border = "1px solid black";
+    progressContainer.style.borderRadius = "10px";
+    progressContainer.style.padding = "2px";
+    progressContainer.style.marginTop = "2px";
+    progressContainer.style.marginBottom = "2px";
+    progressContainer.style.float = "left";
+    var progressBar = new Element("div");
+    progressBar.style.width = percent + "%";
+    progressBar.style.height = "100%";
+    progressBar.style.borderRadius = "10px";
+    progressBar.style.backgroundColor = "#667788";
+    progressContainer.appendChild(progressBar);
+    return progressContainer;
+  },
+  _getFloatClear: function(which) {
+    var br = new Element("br");
+    br.style.clear = which;
+    return br;
+  },
+  renderChildren: function(so, pr_cont) {
+    if (!so.results)
+      return;
+    for (var i = 0; i < so.results.length; i++) {
+      pr_cont.appendChild(this.getStatusRow(so.results[i], i + 1)).style.marginLeft = "15px";
+    }
+  },
+  _setContainerStyles: function(container) {
+    container.id = "container";
+    container.style.overflowY = "auto";
+    container.style.maxHeight = "50em";
+    container.style.marginRight = ".25em";
+    container.style.marginLeft = ".25em";
+  },
+  type: 'TestClient'
+};;
+>>>>>>> master
 /*! RESOURCE: scripts/spell.js */
 var TAG_DIV = "div";
 var TAG_SPAN = "span";
