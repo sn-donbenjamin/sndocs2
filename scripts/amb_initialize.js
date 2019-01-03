@@ -1,2 +1,4 @@
 /*! RESOURCE: /scripts/amb_initialize.js */
-amb.getClient();;
+if (typeof g_amb_on_login === 'undefined') {
+  amb.getClient();
+};

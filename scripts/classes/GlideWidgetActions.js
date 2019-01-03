@@ -22,6 +22,7 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
     var options = select.options;
     for (var i = 0; i < options.length; i++) {
       var opt = options[i];
+      opt.style.display = 'inline';
       if (getAttributeValue(opt, 'gsft_is_action') != 'true')
         continue;
       if (this._checkAction(opt, sysIds))
@@ -41,7 +42,10 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
           opt.disabled = true;
         } else if (validIds.length == sysIds.length) {
           opt.disabled = false;
-          opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+          if (opt.getAttribute("action_name"))
+            opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+          else
+            opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
           opt.setAttribute('gsft_allow', '');
         } else {
           opt.disabled = false;
@@ -50,12 +54,37 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
         }
       }
     }
+    if ('' == 'true' && options.length > 0) {
+      for (var i = 0; i < options.length; i++) {
+        var opt = options[i];
+        if (this._shouldHide(opt, select))
+          opt.style.display = 'none';
+      }
+    }
     select.focus();
+  },
+  _shouldHide: function(opt, select) {
+    var options = select.options;
+    var ourId = opt.id;
+    var ourLabel = opt.innerHTML;
+    for (var i = 0; i < options.length; i++) {
+      var actionLabel = options[i].innerHTML,
+        actionEnabled = options[i].disabled != true,
+        actionId = options[i].id;
+      if (ourId == actionId && !opt.disabled)
+        return false;
+      if (ourLabel == actionLabel && actionEnabled)
+        return true;
+    }
+    return false;
   },
   _checkAction: function(opt, sysIds) {
     if (sysIds.length == 0) {
       opt.disabled = true;
-      opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+      if (opt.getAttribute("action_name"))
+        opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+      else
+        opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
       opt.style.color = '#777';
       return false;
     }

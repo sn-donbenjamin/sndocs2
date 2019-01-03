@@ -169,10 +169,10 @@ function _createFilterSelect(width, multi, size) {
   return s;
 }
 
-function getTableReference(tableName, parentTable) {
+function getTableReference(tableName, parentTable, isTemplate) {
   if (firstTable == '')
     firstTable = tableName;
-  return Table.get(tableName, parentTable);
+  return Table.get(tableName, parentTable, isTemplate);
 }
 
 function allowConditionsForJournal(type, filter) {
@@ -188,7 +188,7 @@ function allowConditionsForJournal(type, filter) {
   return false;
 }
 
-function updateFields(name, select, fOper, fValue, includeExtended, filterClass) {
+function updateFields(name, select, fOper, fValue, includeExtended, filterClass, isTemplate) {
   if (!NOW.c14.setup(name))
     return;
   var tableNameFull = name;
@@ -221,7 +221,7 @@ function updateFields(name, select, fOper, fValue, includeExtended, filterClass)
   var $select = $j(select);
   if (!$select.data('select2'))
     $select.select2();
-  buildFieldsPerType(name, tr, fieldName, fOper, fValue, includeExtended, tableNameFull, filterClass);
+  buildFieldsPerType(name, tr, fieldName, fOper, fValue, includeExtended, tableNameFull, filterClass, isTemplate);
 }
 
 function columnsGet(mft, nu) {
@@ -337,14 +337,14 @@ function addTextInput(td, dValue, type) {
   return input;
 }
 
-function loadFilterTableReference(mft) {
+function loadFilterTableReference(mft, isTemplate) {
   var tablepart = mft.split(".")[0];
   currentTable = mft;
   if (typeof g_filter_description != 'undefined')
     if (g_filter_description.getMainFilterTable() == null ||
       g_filter_description.getMainFilterTable() == "")
       g_filter_description.setMainFilterTable(mft);
-  var tableDef = getTableReference(tablepart);
+  var tableDef = getTableReference(tablepart, null, isTemplate);
   var columns = tableDef.getColumns();
   queueColumns[mft] = columns;
   queueColumns[tablepart] = columns;
@@ -589,9 +589,9 @@ function deleteFilterByID(tablename, id) {
   }
 }
 
-function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includeExtended, tableNameFull, filterClass) {
+function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includeExtended, tableNameFull, filterClass, isTemplate) {
   var tableName = tableName.split(".")[0];
-  var tableDef = getTableReference(tableName);
+  var tableDef = getTableReference(tableName, null, isTemplate);
   if (!tableDef)
     return;
   var parts = descriptorName.split('.');
@@ -734,7 +734,7 @@ function buildFieldsPerType(tableName, tr, descriptorName, fOper, fValue, includ
   }
 }
 
-function addFirstLevelFields(s, target, fValue, filterMethod, fieldName, filter) {
+function addFirstLevelFields(s, target, fValue, filterMethod, fieldName, filter, isTemplate) {
   "use strict";
   var forFilter;
   var onlyRestrictedFields;
@@ -760,7 +760,7 @@ function addFirstLevelFields(s, target, fValue, filterMethod, fieldName, filter)
   var headersAdded = false;
   var parts = target.split(".");
   var tableName = parts[0];
-  var tableDef = getTableReference(tableName);
+  var tableDef = getTableReference(tableName, null, isTemplate);
   var extension = '';
   var prefix = '';
   if (parts.length > 1 && parts[1] != null && parts[1] != '')

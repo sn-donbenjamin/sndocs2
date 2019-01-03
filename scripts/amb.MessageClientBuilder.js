@@ -6,15 +6,19 @@
 
   function getClient() {
     var _window = window.self;
-    if (!(window.MSInputMethodContext && document.documentMode)) {
-      while (_window != _window.parent) {
-        if (_window.g_ambClient)
-          break;
-        _window = _window.parent;
+    try {
+      if (!(window.MSInputMethodContext && document.documentMode)) {
+        while (_window != _window.parent) {
+          if (_window.g_ambClient)
+            break;
+          _window = _window.parent;
+        }
       }
+      if (_window.g_ambClient)
+        return _window.g_ambClient;
+    } catch (e) {
+      console.log("AMB getClient() tried to access parent from an iFrame. Caught error: " + e);
     }
-    if (_window.g_ambClient)
-      return _window.g_ambClient;
     var client = buildClient();
     setClient(client);
     return client;
@@ -33,6 +37,9 @@
     return (function() {
       var ambClient = new amb.MessageClient();
       return {
+        getServerConnection: function() {
+          return ambClient.getServerConnection();
+        },
         connect: function() {
           ambClient.connect();
         },
@@ -64,6 +71,9 @@
           };
           return channel;
         },
+        getChannel0: function(channelName) {
+          return ambClient.getChannel(channelName);
+        },
         registerExtension: function(extensionName, extension) {
           ambClient.registerExtension(extensionName, extension);
         },
@@ -94,4 +104,4 @@
       };
     })();
   }
-})(jQuery);;
+})(jQuery1110);;

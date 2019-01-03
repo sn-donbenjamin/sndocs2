@@ -30,7 +30,6 @@ var GlideForm = Class.create({
     this.newRecord = gel('sys_row') && gel('sys_row').value == "-1";
     this.personalizeHiddenFields = null;
     this.personalizePrefKey = "personalize_" + this.tableName + "_" + this.getViewName();
-    this._isLiveUpdating = false;
     CachedEvent.emit('glideform.initialized', this);
   },
   fieldChanged: function(elementName, changeFlag) {
@@ -564,7 +563,7 @@ var GlideForm = Class.create({
     }
   },
   isDisplayNone: function(ge, control) {
-    if (ge.getType() == 'html' || ge.getType() == 'translated_html' || ge.getType() == 'composite_name')
+    if (ge.getType() == 'html' || ge.getType() == 'translated_html' || ge.getType() == 'composite_name' || ge.getType() == 'url')
       return false;
     if (!control)
       return;
@@ -990,8 +989,20 @@ var GlideForm = Class.create({
       }
     }
   },
-  _setValue: function(fieldName, value, displayValue, updateRelated) {
+  _sanitizeFieldName: function(fieldName) {
     fieldName = this.removeCurrentPrefix(fieldName);
+    fieldName = this._removeTableName(fieldName);
+    return fieldName;
+  },
+  _removeTableName: function(fieldName) {
+    if (fieldName.indexOf(this.tableName + ".") === 0) {
+      var length = this.tableName.length + 1;
+      fieldName = fieldName.substring(length);
+    }
+    return fieldName;
+  },
+  _setValue: function(fieldName, value, displayValue, updateRelated) {
+    fieldName = this._sanitizeFieldName(fieldName);
     var control = this.getControl(fieldName);
     if (typeof control === 'undefined')
       return;
@@ -1020,6 +1031,9 @@ var GlideForm = Class.create({
     }
     if (control && control.id && this.elementHandlers[control.id] && (typeof this.elementHandlers[control.id].setValue == "function")) {
       this.elementHandlers[control.id].setValue(value, displayValue);
+    } else if ('select2' in $j(control).data()) {
+      $j(control).select2('val', value);
+      onChange(this.tableName + "." + fieldName);
     } else if (control.options) {
       var i = this._getSelectedIndex(control, value, displayValue);
       control.selectedIndex = i;
@@ -1345,8 +1359,11 @@ var GlideForm = Class.create({
       return;
     var value = this.getValue(fieldName);
     var gr = new GlideRecord(ed.reference);
-    if (value == "")
+    if (value == "") {
+      if (callback)
+        callback(gr);
       return gr;
+    }
     gr.addQuery('sys_id', value);
     if (callback) {
       var fn = function(gr) {
@@ -1522,6 +1539,8 @@ var GlideForm = Class.create({
     CustomEvent.fire('related_lists.hide', listTableName);
   },
   getRelatedListNames: function() {
+    if (window.NOW.g_relatedLists)
+      return window.NOW.g_relatedLists.lists;
     if (window.g_tabs2List) {
       var relatedListNames = [];
       var trimmedNames = g_tabs2List.tabIDs;
@@ -1918,12 +1937,6 @@ var GlideForm = Class.create({
   },
   getScope: function() {
     return this.scope;
-  },
-  setLiveUpdating: function(isLiveUpdating) {
-    this._isLiveUpdating = isLiveUpdating;
-  },
-  isLiveUpdating: function() {
-    return this._isLiveUpdating;
   },
   _opticsInspectorLog: function(fieldName, oldValue) {
     var value = this.getValue(fieldName);

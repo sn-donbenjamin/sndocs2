@@ -1,40 +1,40 @@
 /*! RESOURCE: /scripts/amb.ChannelRedirect.js */
-(function($) {
-  amb['ChannelRedirect'] = Class.create();
-  amb.ChannelRedirect.prototype = {
-    initialize: function(ambClient, serverConnection,
-      channelProvider) {
-      this._eventManager = new amb.EventManager({
-        CHANNEL_REDIRECT: 'channel.redirect'
-      });
-      this._LOGGER = new amb.Logger(this.type);
-      this._client = ambClient;
-      this._serverConnection = serverConnection;
-      this._channelProvider = channelProvider;
-      this._initializeChannelWhenReady();
-    },
-    _initializeChannelWhenReady: function() {
-      var metaChannel = this._channelProvider('/sn/meta/channel_redirect/' + this._client.getClientId());
-      metaChannel.newListener(this._serverConnection, null).subscribe(this._onAdvice.bind(this));
-    },
-    _onAdvice: function(advice) {
-      this._LOGGER.debug('_onAdvice:' + advice.data.clientId);
-      var fromChannel = this._channelProvider(advice.data.fromChannel);
-      var toChannel = this._channelProvider(advice.data.toChannel);
-      this._eventManager.publish(this.getEvents().CHANNEL_REDIRECT, [fromChannel, toChannel]);
-      this._LOGGER.debug(
-        'published channel switch event, fromChannel:' + fromChannel.getName() +
-        ', toChannel:' + toChannel.getName());
-    },
+amb.ChannelRedirect = function ChannelRedirect(cometd, serverConnection,
+  channelProvider) {
+  var initialized = false;
+  var _cometd = cometd;
+  var eventManager = new amb.EventManager({
+    CHANNEL_REDIRECT: 'channel.redirect'
+  });
+  var LOGGER = new amb.Logger('amb.ChannelRedirect');
+
+  function _onAdvice(advice) {
+    LOGGER.debug('_onAdvice:' + advice.data.clientId);
+    var fromChannel = channelProvider(advice.data.fromChannel);
+    var toChannel = channelProvider(advice.data.toChannel);
+    eventManager.publish(eventManager.getEvents().CHANNEL_REDIRECT, [fromChannel, toChannel]);
+    LOGGER.debug(
+      'published channel switch event, fromChannel:' + fromChannel.getName() +
+      ', toChannel:' + toChannel.getName());
+  }
+  return {
     subscribeToEvent: function(event, callback) {
-      return this._eventManager.subscribe(event, callback);
+      return eventManager.subscribe(event, callback);
     },
     unsubscribeToEvent: function(id) {
-      this._eventManager.unsubscribe(id);
+      eventManager.unsubscribe(id);
     },
     getEvents: function() {
-      return this._eventManager.getEvents();
+      return eventManager.getEvents();
     },
-    type: 'amb.ChannelRedirect'
+    initialize: function() {
+      if (!initialized) {
+        var channelName = '/sn/meta/channel_redirect/' + _cometd.getClientId();
+        var metaChannel = channelProvider(channelName);
+        metaChannel.newListener(serverConnection, null).subscribe(_onAdvice);
+        LOGGER.debug("ChannelRedirect initialized: " + channelName);
+        initialized = true;
+      }
+    }
   }
-})(jQuery);;
+};;

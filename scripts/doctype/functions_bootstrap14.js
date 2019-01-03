@@ -199,7 +199,11 @@ function addRenderEventLogged(func, name, funcname) {
     }
     CustomEvent.fire('page_timing', {
       name: 'CSOL',
-      child: name.substr(6),
+      child: {
+        description: name.substr(7),
+        sys_id: g_event_handler_ids[funcname],
+        source_table: 'sys_script_client'
+      },
       startTime: __rtmr,
       win: window
     });

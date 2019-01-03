@@ -33,6 +33,7 @@ GlideFilter.prototype = {
     this.includeExtended = false;
     this.divName = "gcond_filters";
     this.filterReadOnly = false;
+    this.isTemplate = false;
     if (fDiv != null)
       this.divName = fDiv + "gcond_filters";
     this.fDiv = getThing(this.tableName, this.divName);
@@ -404,7 +405,7 @@ GlideFilter.prototype = {
     var tableName = this.tableName.split(".")[0];
     var parts = fieldName.split(".");
     for (var i = 0; i < parts.length; i++) {
-      var tableDef = loadFilterTableReference(tableName);
+      var tableDef = loadFilterTableReference(tableName, this.isTemplate);
       if (!tableDef)
         return;
       var edef = tableDef.getElement(parts[i]);
@@ -1113,12 +1114,12 @@ GlideConditionRow.prototype = {
     if (this.field != null)
       sname = sname + "." + field;
     this.filter.setFieldUsed(field);
-    addFirstLevelFields(this.fieldSelect, sname, field, this.filter.filterFields.bind(this.filter), null, this.filter);
+    addFirstLevelFields(this.fieldSelect, sname, field, this.filter.filterFields.bind(this.filter), null, this.filter, this.filter.isTemplate);
     if (!this.tdName) {
       return [];
     }
     this.tdName.appendChild(this.fieldSelect);
-    updateFields(tableName, this.fieldSelect, oper, value, this.filter.getIncludeExtended(), this.filter.type);
+    updateFields(tableName, this.fieldSelect, oper, value, this.filter.getIncludeExtended(), this.filter.type, this.filter.isTemplate);
     if (this.filter.isProtectedField(field))
       this._setReadOnly();
     if (this.filter.fieldName == "sys_template.template")
@@ -1302,7 +1303,7 @@ GlideConditionRow.prototype = {
     var sname = tableName.split(".")[0];
     if (this.field != null)
       sname = sname + "." + this.field;
-    addFirstLevelFields(this.fieldSelect, sname, this.field, this.filter.filterFields.bind(this.filter), null, this.filter);
+    addFirstLevelFields(this.fieldSelect, sname, this.field, this.filter.filterFields.bind(this.filter), null, this.filter, this.filter.isTemplate);
   },
   buildRunButton: function(f) {
     var m = new GwtMessage();

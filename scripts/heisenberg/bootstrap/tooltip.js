@@ -6,6 +6,7 @@
       this.enabled =
       this.timeout =
       this.hoverState =
+      this.orphanCheck =
       this.$element = null
     this.init('tooltip', element, options)
   }
@@ -79,11 +80,18 @@
       $(obj.currentTarget).data('bs.' + this.type, self)
     }
     clearTimeout(self.timeout)
+    clearInterval(self.orphanCheck);
     self.hoverState = 'in'
     if (!self.options.delay || !self.options.delay.show) return self.show()
     self.timeout = setTimeout(function() {
       if (self.hoverState == 'in') self.show()
     }, self.options.delay.show)
+    self.orphanCheck = setInterval(function() {
+      if (self.$element && !self.$element.is(':visible')) {
+        self.hide()
+        clearInterval(self.orphanCheck)
+      }
+    }, 1000)
   }
   Tooltip.prototype.leave = function(obj) {
     var self = obj instanceof this.constructor ?
@@ -93,6 +101,7 @@
       $(obj.currentTarget).data('bs.' + this.type, self)
     }
     clearTimeout(self.timeout)
+    clearInterval(self.orphanCheck);
     self.hoverState = 'out'
     if (!self.options.delay || !self.options.delay.hide) return self.hide()
     self.timeout = setTimeout(function() {
@@ -203,15 +212,17 @@
     $tip.find('.tooltip-inner')[this.options.html ? 'html' : 'text'](title)
     $tip.removeClass('fade in top bottom left right')
   }
-  Tooltip.prototype.hide = function() {
+  Tooltip.prototype.hide = function(callback) {
     var that = this
     var $tip = this.tip()
     var e = $.Event('hide.bs.' + this.type)
-    this.$element.removeAttr('aria-describedby')
 
     function complete() {
       if (that.hoverState != 'in') $tip.detach()
-      that.$element.trigger('hidden.bs.' + that.type)
+      that.$element
+        .removeAttr('aria-describedby')
+        .trigger('hidden.bs.' + that.type)
+      callback && callback()
     }
     this.$element.trigger(e)
     if (e.isDefaultPrevented()) return
@@ -337,8 +348,11 @@
     self.tip().hasClass('in') ? self.leave(self) : self.enter(self)
   }
   Tooltip.prototype.destroy = function() {
+    var that = this
     clearTimeout(this.timeout)
-    this.hide().$element.off('.' + this.type).removeData('bs.' + this.type)
+    this.hide(function() {
+      that.$element.off('.' + that.type).removeData('bs.' + that.type)
+    })
   }
 
   function Plugin(option) {

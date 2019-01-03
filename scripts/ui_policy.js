@@ -24,6 +24,8 @@ GlideFieldPolicy.prototype = {
     this.debugFlag = fp.debug;
     this._getFields();
     this.info = {};
+    this.sys_id = fp.sys_id;
+    this.source_table = fp.source_table;
   },
   runPolicyOnLoad: function() {
     if (this.fp.onload)
@@ -575,6 +577,7 @@ GlideFieldPolicy.prototype = {
         }
         this._runAction(action, result);
       }
+      this.scriptRun = true;
       this._runScript(this.fp.script_true)
     } else if (this.fp.reverse) {
       for (var i = 0; i < this.fp.actions.length; i++) {
@@ -586,6 +589,7 @@ GlideFieldPolicy.prototype = {
         }
         this._runAction(action, result);
       }
+      this.scriptRun = false;
       this._runScript(this.fp.script_false)
     }
   },
@@ -637,7 +641,10 @@ GlideFieldPolicy.prototype = {
           dspValue = " [" + fieldObj.value + "] ";
       }
       var prefix = term.or ? ">  or " : "> ";
-      var field = term.field + "\'s ";
+      var field = term.field;
+      if (field.startsWith("IO:") && g_form.getAppliedFieldName)
+        field = g_form.getAppliedFieldName(field);
+      field = field + "\'s ";
       if (term.type == "__preevaluated__") {
         var value = "";
         var operation = "pre-evaluated condition ";
@@ -712,6 +719,11 @@ GlideFieldPolicy.prototype = {
     this.runPolicy();
   },
   _debugAction: function(field, action, flag) {
+    if (this.debugFlag) {
+      if (field && field.startsWith("IO:") && g_form.getAppliedFieldName) {
+        field = g_form.getAppliedFieldName(field);
+      }
+    }
     var message = 'Setting \"' + action + '\" to \"' + flag + '\" on \"' + field + '\" field';
     opticsLog(g_form.getTableName(), field, message);
     if (this.debugFlag)
@@ -732,12 +744,19 @@ function ui_policy_onLoad() {
       uiPolicies.push(fp);
       var __ptmr = new Date();
       uiPolicies[i].runPolicyOnLoad();
-      CustomEvent.fire('page_timing', {
-        name: 'UIOL',
-        child: uiPolicies[i].description,
-        startTime: __ptmr,
-        win: window
-      });
+      if (uiPolicies[i].scriptRun != null) {
+        CustomEvent.fire('page_timing', {
+          name: 'UIOL',
+          child: {
+            description: uiPolicies[i].description,
+            type: uiPolicies[i].scriptRun,
+            sys_id: uiPolicies[i].sys_id,
+            source_table: uiPolicies[i].source_table
+          },
+          startTime: __ptmr,
+          win: window
+        });
+      }
     }
   sw.jslog("ui_policy loaded");
   CustomEvent.fire("ui_policy.loaded");

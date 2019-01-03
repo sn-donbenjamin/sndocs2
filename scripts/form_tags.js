@@ -53,7 +53,7 @@ $j(function($) {
       afterTagRemoved: onTagRemoved,
       showAutocompleteOnFocus: false,
       animate: false,
-      placeholderText: 'Add Tag...',
+      placeholderText: getMessage('Add Tag...'),
       table: $dt.attr('data-table'),
       labelsListString: JSON.stringify(json),
       autocomplete: {

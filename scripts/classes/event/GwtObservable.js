@@ -37,9 +37,10 @@ var GwtObservable = Class.create({
     this.events = this.events || {};
     var args = $A(arguments);
     var name = args.shift();
-    var event = this.events[name];
-    if (!event)
+    var eventList = this.events[name];
+    if (!eventList)
       return true;
+    var event = eventList.slice();
     this._isFiring = true;
     for (var i = 0, l = event.length; i < l; i++) {
       var ev = event[i];

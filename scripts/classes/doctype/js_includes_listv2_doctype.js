@@ -142,7 +142,7 @@ var GlideList2 = Class.create(GwtObservable, {
     return window.self.frameElement;
   },
   _stripFieldName: function(fieldName) {
-    if (fieldName.startsWith(this.tableName + '.'))
+    if (fieldName && fieldName.startsWith(this.tableName + '.'))
       return fieldName.substring(this.tableName.length + 1);
     return fieldName;
   },
@@ -1891,6 +1891,7 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
     var options = select.options;
     for (var i = 0; i < options.length; i++) {
       var opt = options[i];
+      opt.style.display = 'inline';
       if (getAttributeValue(opt, 'gsft_is_action') != 'true')
         continue;
       if (this._checkAction(opt, sysIds))
@@ -1910,7 +1911,10 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
           opt.disabled = true;
         } else if (validIds.length == sysIds.length) {
           opt.disabled = false;
-          opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+          if (opt.getAttribute("action_name"))
+            opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+          else
+            opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
           opt.setAttribute('gsft_allow', '');
         } else {
           opt.disabled = false;
@@ -1919,12 +1923,37 @@ var GlideWidgetActions = Class.create(GlideListWidget, {
         }
       }
     }
+    if ('' == 'true' && options.length > 0) {
+      for (var i = 0; i < options.length; i++) {
+        var opt = options[i];
+        if (this._shouldHide(opt, select))
+          opt.style.display = 'none';
+      }
+    }
     select.focus();
+  },
+  _shouldHide: function(opt, select) {
+    var options = select.options;
+    var ourId = opt.id;
+    var ourLabel = opt.innerHTML;
+    for (var i = 0; i < options.length; i++) {
+      var actionLabel = options[i].innerHTML,
+        actionEnabled = options[i].disabled != true,
+        actionId = options[i].id;
+      if (ourId == actionId && !opt.disabled)
+        return false;
+      if (ourLabel == actionLabel && actionEnabled)
+        return true;
+    }
+    return false;
   },
   _checkAction: function(opt, sysIds) {
     if (sysIds.length == 0) {
       opt.disabled = true;
-      opt.innerHTML = getAttributeValue(opt, 'gsft_base_label');
+      if (opt.getAttribute("action_name"))
+        opt.innerHTML = "&nbsp;&nbsp;&nbsp;" + htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
+      else
+        opt.innerHTML = htmlEscape(getAttributeValue(opt, 'gsft_base_label'));
       opt.style.color = '#777';
       return false;
     }
@@ -2554,6 +2583,9 @@ CustomEvent.observe('list2_init', function(list2) {
 /*! RESOURCE: /scripts/classes/doctype/GlideHeaderSearch.js */
 $j(function($) {
   'use strict';
+  if (window.NOW.headerSearchLoaded)
+    return;
+  window.NOW.headerSearchLoaded = true;
   var keyEvents = isMSIE9 || isMSIE10 ? "keydown" : "keyup"
   $(document).on(keyEvents, "INPUT.list_header_search", function(evt) {
     $(this).addClass('modified');
@@ -3095,119 +3127,6 @@ var GlideWidgetFilter = Class.create(GlideListWidget, {
   },
   type: 'GlideWidgetFilter'
 });;
-/*! RESOURCE: /scripts/classes/doctype/streamButton.js */
-$j(function($) {
-  "use strict";
-  var closeButtonPadding = 32;
-  $('.list_stream_button').click(function() {
-    var table = $('table.list_table[data-list_id]');
-    var listid = table.attr('data-list_id');
-    var query = table.attr('query');
-    query = encodeURIComponent(query);
-    var url = "$stream.do?sysparm_table=" + listid + "&sysparm_nostack=yes&sysparm_query=" + query;
-    var target = 'parent';
-    if (shouldUseFormPane())
-      target = 'form_pane';
-    url += "&sysparm_link_target=" + target;
-    createStreamReader(url);
-  });
-  $(document).on('click', '.form_stream_button', function() {
-    var url = "$stream.do?sysparm_table=" + g_form.getTableName();
-    url += "&sysparm_sys_id=" + g_form.getUniqueValue();
-    url += "&sysparm_stack=no";
-    createStreamReader(url);
-  });
-
-  function shouldUseFormPane() {
-    try {
-      if (self == top)
-        return false;
-      if (window.top.g_navManager)
-        return !!window.top.g_navManager.options.formTarget;
-    } catch (e) {}
-    return false;
-  }
-
-  function createStreamReader(url) {
-    if ($('.list_stream_reader').length)
-      return;
-    var frame = '	<iframe src="' + url + '" id="list_stream_reader_frame"></iframe>';
-    var $div = $('<div class="list_stream_reader">' +
-      '<div class="list_stream_plank_header">' +
-      '<span class="list_stream_reader_close"><i class="icon-double-chevron-right"></i></span><span>' + getMessage('Activity Stream') + '</span>' +
-      '</div>' +
-      frame +
-      '</div>');
-    $('body').append($div);
-    $('#list_stream_reader_frame').bind('load', function() {
-      if (NOW.compact) {
-        $(this).contents().find('html').addClass('compact');
-      }
-      CustomEvent.observe('compact', function(newValue) {
-        var method = newValue ? 'addClass' : 'removeClass';
-        $('#list_stream_reader_frame').contents()
-          .find('html')[method]('compact');
-      })
-    });
-    resizeStreamReader($div);
-    $(window).bind('resize.streamreader', function() {
-      unfreezeTableWidth();
-      if ($div.parent().length === 0) {
-        $(window).unbind('resize.streamreader');
-        return;
-      }
-      resizeStreamReader($div);
-    })
-  }
-
-  function resizeStreamReader($div) {
-    freezeTableWidth();
-    var $body = $('body');
-    var width = $div.outerWidth() + closeButtonPadding;
-    $body.css({
-      'padding-right': width,
-      'position': 'absolute'
-    });
-    var top = 50;
-    if (typeof g_form == 'undefined')
-      top = $('.list_nav_spacer').offset().top;
-    else
-      top = $('.section_header_content_no_scroll').offset().top;
-    $div.css('top', top);
-    if ("ontouchstart" in window) {
-      $div.css('absolute');
-      window.scrollTo(0, top);
-    }
-  }
-  $('body').on('click', '.list_stream_reader_close', function() {
-    var $readerDiv = $(this).closest('.list_stream_reader');
-    closeStreamReader($readerDiv);
-  });
-
-  function closeStreamReader($readerDiv) {
-    unfreezeTableWidth();
-    $readerDiv.remove();
-    var $body = $('body');
-    $body.css({
-      'position': '',
-      'padding-right': 0
-    });
-  }
-
-  function freezeTableWidth() {
-    $('table.list_table').each(function(index, el) {
-      var $el = $(el);
-      var width = $el.width();
-      $el.css('width', width);
-    })
-  }
-
-  function unfreezeTableWidth() {
-    $('table.list_table').each(function(index, el) {
-      $(el).css('width', '');
-    })
-  }
-});;
 /*! RESOURCE: /scripts/sn/common/messaging/deprecated/NOW.messaging.js */
 (function(global) {
   "use strict";
@@ -3645,4 +3564,81 @@ $j(function($) {
       element.setAttribute(ATTR, date);
     updateElement(element);
   }
-});;;
+});;
+/*! RESOURCE: /scripts/classes/doctype/GlideListv3Compatibility.js */
+(function() {
+  $j(document).on('click', '.list-compat-check', function() {
+    var $element = $j(this);
+    var popoverTarget = this.getAttribute('data-target');
+    if (!popoverTarget)
+      return;
+    if (popoverTarget.indexOf('#') == 0)
+      popoverTarget = document.getElementById(popoverTarget.substring(1));
+    var $popover = $j(popoverTarget);
+    var realTable = $element.attr('data-table');
+    var parent = $element.attr('data-parent');
+    var table = parent && window.g_form ? g_form.getTableName() : realTable;
+    var listControlID = $element.attr('data-list-control');
+    if ($element.attr('data-compat-rendered') == 'true')
+      return;
+    $j.ajax({
+      headers: {
+        'X-UserToken': window.g_ck
+      },
+      data: {
+        sysparm_parent: parent,
+        sysparm_realtable: realTable
+      },
+      url: '/api/now/v1/ui/list_compatibility/' + table
+    }).then(function(response) {
+      var tmpl = new XMLTemplate('listcompat_content');
+      var output = tmpl.evaluate({
+        related_lists_enabled: convertResultToCheck(parent ? response.result.related_lists_enabled : true, null, 'glide.ui.list_v3.related_list'),
+        sys_control_enabled: convertResultToCheck(response.result.checks.sys_control_enabled, listControlID),
+        hierarchical_lists: convertResultToCheck(response.result.checks.hierarchical_lists, listControlID),
+        list_edit_insert_row: convertResultToCheck(response.result.checks.list_edit_insert_row, listControlID),
+        compatible_ui_actions: convertResultToCheck(response.result.checks.compatible_ui_actions)
+      });
+      $popover.find('.popover-body').append(output);
+      output = "";
+      if (response.result.checks.ui_actions) {
+        var uiActions = response.result.checks.ui_actions;
+        for (var i = 0; i < uiActions.length; i++) {
+          if (uiActions[i].count == '0')
+            continue;
+          output += outputUIActionLine(uiActions[i], table);
+        }
+      }
+      $popover.find('.ui-actions').append(output);
+      $popover.find('[title]').tooltip().hideFix();
+      $element.attr('data-compat-rendered', 'true').popover('show');
+    })
+  });
+
+  function outputUIActionLine(action, table) {
+    var tmpl = new XMLTemplate(action.action_name ? 'listcompat_ui_action' : 'listcompat_ui_action_global');
+    return tmpl.evaluate($j.extend({}, action, {
+      table: table
+    }));
+  }
+
+  function convertResultToCheck(param, listControlID, propertyName) {
+    var href = "";
+    if (listControlID && listControlID != '-1') {
+      href = 'sys_ui_list_control.do?sys_id=' + listControlID;
+    } else if (propertyName) {
+      href = 'sys_properties.do?sysparm_query=name=' + propertyName;
+    }
+    return param ? {
+      msg: getMessage('Compatible'),
+      rowStyle: 'hidden',
+      style: 'icon-success-circle color-green',
+      href: ''
+    } : {
+      msg: getMessage('Not compatible'),
+      rowStyle: '',
+      style: 'icon-error-circle color-red',
+      href: href
+    };
+  }
+})();;;

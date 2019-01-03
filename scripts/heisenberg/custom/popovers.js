@@ -44,6 +44,8 @@
       };
     })();
     $(window).on('resize', function() {
+      if ('ontouchstart' in document.documentElement && document.activeElement.type === 'text')
+        return;
       debounce(hideOpenPopovers, 0, true);
       debounce(resetContainer);
     });

@@ -17,6 +17,8 @@ var CustomEventManager = (function(existingCustomEvent) {
   function on(name, func) {
     if (!func || typeof func !== 'function')
       return;
+    if (typeof name === 'undefined')
+      return;
     if (!events[name])
       events[name] = [];
     events[name].push(func);
@@ -65,9 +67,10 @@ var CustomEventManager = (function(existingCustomEvent) {
       return true;
     var args = Array.prototype.slice.apply(arguments);
     var name = args.shift();
-    var event = events[name];
-    if (!event)
+    var eventList = events[name];
+    if (!eventList)
       return true;
+    var event = eventList.slice();
     isFiringFlag = true;
     for (var i = 0, l = event.length; i < l; i++) {
       var ev = event[i];
