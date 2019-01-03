@@ -99,7 +99,7 @@ CustomEvent.observe('list2_init', function(list2) {
           if (curCol > numColsSticky) {
             $j(this).remove();
           }
-        })
+        });
         curCol = 0;
       });
       $cloneTableColumns.css({
@@ -117,12 +117,10 @@ CustomEvent.observe('list2_init', function(list2) {
     }
     var scrollLeft = $j(document).scrollLeft();
     var margin = parseInt($j("body").css('margin-left'));
-    var navHeader = $j('nav.list_nav_top.list_nav');
-    var topBorder = parseInt(navHeader.css('borderTopWidth'), 10);
-    var botBorder = parseInt(navHeader.css('borderBottomWidth'), 10);
-    var scrollTop = $j(window).scrollTop() + (navHeader.outerHeight() - navHeader.height() + topBorder + botBorder);
+    var listHeaderSpacerHeight = $j('.list_nav_spacer').offset().top;
+    var scrollTop = $j(window).scrollTop();
     var offset = $table.offset();
-    var breadcrumbOffset = $j('.breadcrumb_container').height();
+    var tableTop = offset.top - listHeaderSpacerHeight;
     if (g_text_direction == "rtl") {
       $cloneTable.css({
         "right": margin + scrollLeft
@@ -144,7 +142,7 @@ CustomEvent.observe('list2_init', function(list2) {
         $columnHeaders.css("left", 0);
       }
     }
-    if ((scrollTop > offset.top - breadcrumbOffset) && (offset.top - breadcrumbOffset + $table.height() > scrollTop)) {
+    if ((scrollTop > tableTop)) {
       $cloneTable.css('display', 'block');
       if (enableStickyColumns) {
         $columnHeaders.css('display', 'block');

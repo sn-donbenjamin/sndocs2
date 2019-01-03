@@ -25,6 +25,7 @@ function glideList2InitEvents() {
       var input = $j(e.target).parent()[0].querySelector('input');
       input.checked = !input.checked;
       GlideList2.get(input.getAttribute('data-list_id')).rowChecked(input, e);
+      $j(input).change();
     });
   } else {
     document.body.on('click', 'input[data-type="list2_checkbox"], label[data-type="list2_checkbox"]', function(evt, element) {
@@ -37,6 +38,11 @@ function glideList2InitEvents() {
     evt.stopPropagation();
   });
   document.body.on('click', 'a[data-type="list2_group_toggle"]', function(evt, element) {
+    var toggleIcon = element.childNodes[0];
+    if (toggleIcon && toggleIcon.className.indexOf('collapsedGroup') > -1)
+      toggleIcon.className = toggleIcon.className.replace(/\bcollapsedGroup\b/, '');
+    else
+      toggleIcon.className += 'collapsedGroup';
     GlideList2.get(element.getAttribute('data-list_id')).toggleGroups();
     evt.stop();
   });

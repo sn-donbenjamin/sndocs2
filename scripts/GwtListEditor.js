@@ -39,6 +39,8 @@ var GwtListEditor = Class.create({
   },
   onClickedAndDisabled: function(e) {
     var element = Event.element(e);
+    if (element.tagName == 'DIV' && element.parentNode.tagName == 'TD')
+      element = element.parentNode;
     if (this.ignoreClick(element))
       return true;
     var warn = $("list_edit_disabled_warning");
@@ -53,6 +55,8 @@ var GwtListEditor = Class.create({
   },
   onSelected: function(e) {
     var element = Event.element(e);
+    if (element.tagName == 'DIV' && element.parentNode.tagName == 'TD')
+      element = element.parentNode;
     if (this.ignoreClick(element))
       return true;
     var listEditor = this._getListEditorForElement(element);

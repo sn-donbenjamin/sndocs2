@@ -41,9 +41,19 @@ var GwtListEditSelect = Class.create(GwtListEditWindow, {
     for (var i = 0; i < items.length; i++) {
       var v = items[i].getAttribute("value");
       var l = items[i].getAttribute("label");
-      addOption(this.focusElement, v, l, this._isSelected(value, v, l));
+      if (!this._checkDuplicateOptions(v, l))
+        addOption(this.focusElement, v, l, this._isSelected(value, v, l));
     }
     this.createEditControlsComplete();
+  },
+  _checkDuplicateOptions: function(value, label) {
+    if (!this.focusElement.length)
+      return false;
+    var opts = this.focusElement.options;
+    for (var i = 0; i < opts.length; i++)
+      if (opts[i].value == value && opts[i].text === label)
+        return true;
+    return false;
   },
   _isSelected: function(value, v, l) {
     if (l == value || v == value)

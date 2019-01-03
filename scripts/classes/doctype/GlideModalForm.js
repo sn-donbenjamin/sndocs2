@@ -13,13 +13,18 @@
     init: function(title, tableName, onCompletionCallback, readOnly) {
       this.initialize.call(this, tableName, readOnly, 800);
       this.tableName = tableName;
-      if (title)
+      if (title) {
         this.setTitle(title);
-      if (onCompletionCallback)
+      }
+      if (onCompletionCallback) {
         this.setCompletionCallback(onCompletionCallback);
+      }
     },
     setSize: function(width) {
       this.size = 'modal-95';
+    },
+    setFooter: function(bool) {
+      this.hasFooter = !!bool;
     },
     setSysID: function(id) {
       this.setPreference('sys_id', id);
@@ -27,8 +32,14 @@
     setType: function(type) {
       this.setPreference('type', type);
     },
+    setTemplate: function(template) {
+      this.template = template;
+    },
     setCompletionCallback: function(func) {
       this.onCompletionFunc = func;
+    },
+    setOnloadCallback: function(func) {
+      this.onFormLoad = func;
     },
     render: function() {
       this._createModal();
@@ -46,6 +57,9 @@
       margin += frame.offset().top;
       if (this._bodyHeight > margin)
         this._bodyHeight -= margin;
+      if (this.hasFooter) {
+        this._bodyHeight = this._bodyHeight - 40;
+      }
       frame.css('height', this._bodyHeight);
       var $doc = frame[0].contentWindow ? frame[0].contentWindow.document : frame[0].contentDocument;
       var $body = $($doc.body);
@@ -78,6 +92,16 @@
       parms.push('sysparm_returned_value=$display_value');
       addHidden(f, 'sysparm_goto_url', 'modal_dialog_form_response.do?' + parms.join('&'));
       f.submit();
+    },
+    switchView: function(newView) {
+      this.setPreferenceAndReload({
+        'sysparm_view': newView
+      });
+    },
+    setPreferenceAndReload: function(params) {
+      for (var key in params)
+        this.preferences[key] = params[key];
+      this.render();
     },
     _formLoaded: function() {
       var frame = $('.modal-frame', this.$window);

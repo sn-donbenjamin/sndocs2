@@ -432,6 +432,8 @@ function prepareSortButton(table, list) {
   }
 }
 CustomEvent.observe("list.loaded", function(table, list) {
+  if (!list)
+    return;
   prepareSortButton(table, list);
 });
 CustomEvent.observe("partial.page.reload", function(table, list) {

@@ -300,7 +300,7 @@
         label.css("font-style", "italic");
       if (!this.options.query) {
         label.click(function() {
-          window.location.href = that.options.table + "_list.do?sysparm_query=" + labelJson.query;
+          window.open(that.options.table + "_list.do?sysparm_query=" + labelJson.query);
         });
       } else {
         label.click(function() {
@@ -327,6 +327,7 @@
           .append(removeTagIcon)
           .click(function(e) {
             that.removeTagById(tag, this.up("li").getAttribute("id"));
+            e.stopPropagation();
           });
         if (g_enhanced_activated == 'true') {
           var icon = (labelJson.type == 'SHARED') ? 'icon-user-group' : 'icon-user';

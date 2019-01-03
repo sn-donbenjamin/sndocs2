@@ -34,7 +34,7 @@ var PersonalizeForm = Class.create({
         }
       }
     });
-    $j(window).on('resize', function(e) {
+    $j(window).on('resize', function() {
       if (self.isOpen)
         self.hideSidebar();
     });
@@ -141,7 +141,7 @@ var PersonalizeForm = Class.create({
           self.$fields = self.$fields.add(input);
       }
       container.append(html);
-    })
+    });
     this.$fieldLabelHideButtons.click(function(event) {
       $j(this).data("input").click();
       event.preventDefault();
@@ -160,7 +160,7 @@ var PersonalizeForm = Class.create({
         name: item.fieldName,
         label: g_form.getLabelOf(item.fieldName),
         display: !g_form.isUserPersonalizedField(item.fieldName),
-        isDisabled: g_form.isMandatory(item.fieldName) || g_form.isDisplayNone(item, g_form.getControl(item.fieldName))
+        isDisabled: (g_form.isMandatory(item.fieldName) || g_form.isDisplayNone(item, g_form.getControl(item.fieldName))) && !g_form.isUserPersonalizedField(item.fieldName)
       })
     });
     return answer;
@@ -169,7 +169,7 @@ var PersonalizeForm = Class.create({
     return 'PersonalizeForm';
   }
 });
-$j(function($) {
+$j(function() {
   "use strict";
   if (typeof g_form !== "undefined")
     new PersonalizeForm("#togglePersonalizeForm");

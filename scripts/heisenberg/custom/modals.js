@@ -22,13 +22,11 @@ jQuery(function($) {
     this.$element.css('z-index', (~~zmodal) + (10 * modalCount));
     $backdrop.css('z-index', (~~zbackdrop) + (10 * modalCount));
     $backdrop.addClass('stacked');
-    if (isMobileSafari()) {
-      $backdrop.css('display', 'none');
-    }
     forceRedraw(this.$element[0]);
   };
-  bsModal.prototype.hide = function() {
+  bsModal.prototype.hide = function(e) {
     bsModalHide.apply(this, arguments);
+    if (this.isShown) return;
     modalCount--;
     this.$element.css('z-index', '');
     forceRedraw(this.$element[0]);

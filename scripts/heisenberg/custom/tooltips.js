@@ -3,6 +3,11 @@
   "use strict";
   var bsTooltip = $.fn.tooltip.Constructor;
   bsTooltip.DEFAULTS.placement = 'auto';
+  bsTooltip.DEFAULTS.delay = {
+    'show': 500,
+    'hide': 100
+  };
+  bsTooltip.DEFAULTS.trigger = 'hover';
   $(function() {
     if ('ontouchstart' in document.documentElement)
       return;
@@ -12,12 +17,7 @@
       var $this = $(this);
       if (!$this.data('bs.tooltip')) {
         $this.tooltip({
-          delay: {
-            'show': 500,
-            'hide': 100
-          },
-          container: $this.attr('data-container') || 'body',
-          trigger: 'hover'
+          container: $this.attr('data-container') || 'body'
         });
         $this.hideFix();
         $this.on('click focus', function() {

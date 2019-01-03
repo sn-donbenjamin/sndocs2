@@ -67,6 +67,10 @@ var g_IconBrowseHelpers = {
   }
 };
 
+function imagePickedCustomEvent(options) {
+  CustomEvent.fire('glide:image_picked', options);
+}
+
 function imageListPick(elementName, value) {
   var element = document.getElementById(elementName);
   if (element.nodeName == "IMG" || element.nodeName == "INPUT") {

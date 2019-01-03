@@ -6,7 +6,8 @@ $j(function($) {
   $('#tags_menu').click(function() {
     $('#form_tags').toggle();
     CustomEvent.fire('frame.resized');
-    $dt.find('input').show();
+    $dt.find('input').show().parent().show();
+    $dt.find('input').focus();
   })
   var url = new GlideURL("data_table.do");
   url.addParam('sysparm_type', 'labels');
@@ -121,7 +122,7 @@ $j(function($) {
       "color": json.tcolor
     });
     share.parent().find(".tagit-label").unbind('click').click(function() {
-      window.location.href = json.table + "_list.do?sysparm_query=" + json.query
+      window.open(json.table + "_list.do?sysparm_query=" + json.query);
     });
     var shareLevel = (json.type == 'SHARED') ? 'tagit-share-group' : 'tagit-share-user';
     share.parent().removeClass("tagit-share-user tagit-share-group").addClass(shareLevel);

@@ -1,6 +1,6 @@
 /*! RESOURCE: /scripts/classes/GwtExportScheduleDialog.js */
 var GwtExportScheduleDialog = Class.create(GlideDialogWindow, {
-  initialize: function(tableName, query, rows, view, action) {
+  initialize: function(tableName, query, rows, view, action, fields) {
     GlideDialogWindow.prototype.initialize.call(this, 'export_schedule_dialog');
     var keys = ["Please Confirm", "Please specify an address", "Export will be emailed to"];
     this.msgs = getMessages(keys);
@@ -9,12 +9,14 @@ var GwtExportScheduleDialog = Class.create(GlideDialogWindow, {
     this.rows = rows;
     this.view = view;
     this.action = action;
+    this.fields = fields;
     this.setPreference('table', 'export_schedule');
     this.setPreference('sysparm_query', this.query);
     this.setPreference('sysparm_target', this.tableName);
     this.setPreference('sysparm_export', this.action);
     this.setPreference('sysparm_view', this.view);
     this.setPreference('sysparm_rows', this.rows);
+    this.setPreference('sysparm_fields', this.fields);
     this.setTitle(this.msgs["Please Confirm"]);
     g_export_schedule_dialog = this;
   },
@@ -48,7 +50,7 @@ var GwtExportScheduleDialog = Class.create(GlideDialogWindow, {
     this.close();
   },
   waitForIt: function() {
-    var dialog = new GwtPollDialog(this.tableName, this.query, this.rows, this.view, this.action);
+    var dialog = new GwtPollDialog(this.tableName, this.query, this.rows, this.view, this.action, this.fields);
     dialog.execute();
     this.close();
   },

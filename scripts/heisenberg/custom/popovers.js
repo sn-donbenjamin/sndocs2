@@ -47,7 +47,8 @@
       debounce(hideOpenPopovers, 0, true);
       debounce(resetContainer);
     });
-    $('html').on('click', function(e) {
+
+    function closeOnBlur(e) {
       function eventTargetInElement(elem) {
         return elem.is(e.target) || elem.has(e.target).length !== 0
       }
@@ -62,7 +63,15 @@
           return;
         $popoverButton.popover('hide');
       });
+    };
+    $('html').on('click', function(e) {
+      closeOnBlur(e);
     });
+    if (CustomEvent && CustomEvent.observe) {
+      CustomEvent.observe('body_clicked', function(e) {
+        closeOnBlur(e);
+      });
+    }
   });
   $(document).on('show.bs.popover hide.bs.popover', function() {
     if (window._frameChanged)

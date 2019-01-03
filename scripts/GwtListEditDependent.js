@@ -142,7 +142,8 @@ var GwtListEditDependent = Class.create(GwtListEditWindow, {
     for (var i = 0; i < items.length; i++) {
       var v = items[i].getAttribute("value");
       var l = items[i].getAttribute("label");
-      addOption(element, v, l, (v == value));
+      if (!this._checkDuplicateOptions(element, v, l))
+        addOption(element, v, l, (v == value));
     }
     if (this.controlsCount > 0)
       this.controlsCount--;
@@ -150,6 +151,15 @@ var GwtListEditDependent = Class.create(GwtListEditWindow, {
       setTimeout(this._resizeControls.bind(this), 0);
       this.createEditControlsComplete();
     }
+  },
+  _checkDuplicateOptions: function(element, value, label) {
+    if (!element.length)
+      return false;
+    var opts = element.options;
+    for (var i = 0; i < opts.length; i++)
+      if (opts[i].value == value && opts[i].text === label)
+        return true;
+    return false;
   },
   save: function() {
     var tbody = gel("editControls");
