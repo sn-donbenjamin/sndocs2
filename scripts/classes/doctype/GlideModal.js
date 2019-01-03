@@ -10,6 +10,7 @@
       this.id = id;
       this.readOnly = readOnly;
       this.backdropStatic = false;
+      this.nologValue = false;
       this.setDialog(id);
       this.setSize(width, height);
       this.setPreference('renderer', 'RenderForm');
@@ -49,6 +50,9 @@
     setBackdropStatic: function(makeStatic) {
       this.backdropStatic = makeStatic;
     },
+    setNologValue: function(nolog) {
+      this.nologValue = !!nolog;
+    },
     updateTitle: function() {
       $('.modal-title', this.$window).html(this.title);
     },
@@ -59,6 +63,8 @@
     render: function() {
       var description = this.getDescribingText();
       var ajax = new GlideAjax("RenderInfo");
+      if (this.nologValue)
+        ajax.addParam("ni.nolog.sysparm_value", true);
       ajax.addParam("sysparm_value", description);
       ajax.addParam("sysparm_name", this.id);
       ajax.getXML(this._renderFromAjax.bind(this));

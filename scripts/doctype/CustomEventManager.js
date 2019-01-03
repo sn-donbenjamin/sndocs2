@@ -17,6 +17,8 @@ var CustomEventManager = (function(existingCustomEvent) {
   function on(name, func) {
     if (!func || typeof func !== 'function')
       return;
+    if (typeof name === 'undefined')
+      return;
     if (!events[name])
       events[name] = [];
     events[name].push(func);

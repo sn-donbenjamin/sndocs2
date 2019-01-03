@@ -494,6 +494,9 @@ function restoreSelection(e) {
   e.style.MozUserSelect = "";
 }
 
+<<<<<<< HEAD
+function getAttributeValue(element,
+=======
 function getAttributeValue(element, name) {
   if (!element.attributes)
     return null;
@@ -655,3 +658,4 @@ function opticsLog(tablename, fieldname, message, oldvalue, newvalue) {
   }
   CustomEvent.fire('glide_optics_inspect_log_message', info);
 };
+>>>>>>> master

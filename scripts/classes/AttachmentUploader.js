@@ -65,8 +65,13 @@ var AttachmentUploader = Class.create({
         var xml = self.xhr.responseXML;
         if (xml) {
           var sys_id = xml.documentElement.getAttribute("sys_id");
+<<<<<<< HEAD
+          if (sys_id == "attachment.refused") {
+            alert("Attachment refused because file type not allowed or type does not match file contents.");
+=======
           if (!sys_id) {
             alert("Attachment failed because file type does not match with file contents.");
+>>>>>>> master
           } else if (sys_id == "create.permission") {
             alert("You do not have ability to attach file to this record.");
           } else if (sys_id == "upload.error") {

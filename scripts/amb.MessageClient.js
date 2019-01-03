@@ -11,12 +11,18 @@
     var connected = false;
     var initialized = false;
     var uninitializedChannels = [];
+<<<<<<< HEAD
+    serverConnection.subscribeToEvent(serverConnection.getEvents().CONNECTION_BROKEN, _connectionBroken);
+    serverConnection.subscribeToEvent(serverConnection.getEvents().CONNECTION_OPENED, _connectionOpened);
+    serverConnection.subscribeToEvent(serverConnection.getEvents().CONNECTION_INITIALIZED, _connectionInitialized);
+=======
     serverConnection.subscribeToEvent(
       serverConnection.getEvents().CONNECTION_BROKEN, _connectionBroken);
     serverConnection.subscribeToEvent(
       serverConnection.getEvents().CONNECTION_OPENED, _connectionOpened);
     serverConnection.subscribeToEvent(
       serverConnection.getEvents().CONNECTION_INITIALIZED, _connectionInitialized);
+>>>>>>> master
     var _connectionBrokenEvent = false;
 
     function _connectionBroken() {
@@ -44,6 +50,14 @@
           return;
         sc.setLastError(null);
         LOGGER.debug("channel resubscribe!");
+<<<<<<< HEAD
+        $.ajax({
+          url: "/amb_session_setup.do",
+          method: "GET",
+          contentType: "application/json;charset=UTF-8",
+          data: "",
+          dataType: "HTML",
+=======
         var p = {
           user_agent: navigator.userAgent,
           ua_time: new Date().toISOString(),
@@ -58,6 +72,7 @@
           contentType: "application/json;charset=UTF-8",
           data: JSON.stringify(p),
           dataType: "JSON",
+>>>>>>> master
           headers: {
             'X-UserToken': window.g_ck
           }

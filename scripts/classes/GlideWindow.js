@@ -36,6 +36,10 @@ var GlideWindow = Class.create(GwtObservable, {
     this.headerWrap = false;
     this.setScope("global");
     this.doctype = document.documentElement.getAttribute('data-doctype') == 'true';
+<<<<<<< HEAD
+    this.nologValue = false;
+=======
+>>>>>>> master
   },
   addDecoration: function(decorationElement, leftSide) {
     if (leftSide) {
@@ -286,6 +290,11 @@ var GlideWindow = Class.create(GwtObservable, {
     var ajax = new GlideAjax("RenderInfo");
     if (this.getPreference("sysparm_scope"))
       ajax.setScope(this.getPreference("sysparm_scope"))
+<<<<<<< HEAD
+    if (this.nologValue)
+      ajax.addParam("ni.nolog.sysparm_value", true);
+=======
+>>>>>>> master
     ajax.addParam("sysparm_value", description);
     ajax.addParam("sysparm_name", id);
     ajax.getXML(this._bodyRendered.bind(this));
@@ -638,6 +647,12 @@ var GlideWindow = Class.create(GwtObservable, {
       this.getContainer().style.zIndex = i;
     this.zIndex = i;
   },
+<<<<<<< HEAD
+  setNologValue: function(nolog) {
+    this.nologValue = !!nolog;
+  },
+=======
+>>>>>>> master
   on: function(name, func) {
     if (this.FORWARD_EVENTS[name])
       this.forward(name, this.window, func);

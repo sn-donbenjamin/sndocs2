@@ -3033,6 +3033,564 @@ var GwtCellEditor = Class.create({
           if (visited[name])
             return topParent;
           visited[name] = topParent;
+<<<<<<< HEAD
+        }
+      }
+    }
+    return topParent;
+  },
+  _initFields: function(fieldName) {
+    var tableElement = TableElement.get(fieldName);
+    if (!tableElement)
+      return;
+    var prefix = '';
+    var parts = fieldName.split('.');
+    if (parts.length > 2)
+      prefix = parts.slice(1, -1).join('.') + '.';
+    if (this._addFieldName(prefix + tableElement.name)) {
+      var children = tableElement.getDependentChildren();
+      for (var k in children)
+        this._initFields(this.table + "." + prefix + k);
+    }
+  },
+  _addFieldName: function(fieldName) {
+    for (var i = 0; i < this.fields.length; i++)
+      if (this.fields[i] == fieldName)
+        return null;
+    this.fields.push(fieldName);
+    return fieldName;
+  },
+  addRecSysId: function(recPos, callback) {
+    var sysId = this.tableController.getSysIDByPos(recPos);
+    if (!sysId)
+      return;
+    if (this.changes.isDeletedRow(sysId))
+      return;
+    this._loadValues(callback);
+  },
+  _loadValues: function(callbackStub) {
+    this.changes.loadValues(this._getSelectedSysIds(), this.fields, callbackStub);
+  },
+  _saveValues: function() {
+    if (this.savedFields.length > 0) {
+      this.tableController.fireCellsChanged(this.savedFields);
+      this.savedFields = [];
+    }
+  },
+  isActive: function() {
+    if (!this.valid)
+      return false;
+    if (!this.editWindow)
+      return false;
+    return !this.editWindow.destroyed;
+  },
+  toString: function() {
+    return "GwtCellEditor";
+  }
+});;
+/*! RESOURCE: /scripts/GwtListEditAjaxChangeSaver.js */
+var GwtListEditAjaxChangeSaver = Class.create({
+  PROCESSOR: 'com.glide.ui_list_edit.AJAXListEdit',
+  WAIT_INITIAL_DELAY: 300,
+  WAITING_IMAGE: 'images/loading_anim3.gifx',
+  initialize: function(changes, tableController, onCompletion) {
+    this.changes = changes;
+    this.tableController = tableController;
+    this.onCompletion = onCompletion;
+    this.changedEntries = [];
+    this.savingImages = [];
+    this.timer = null;
+  },
+  save: function() {
+    this._startSavingTimer();
+    var ajax = new GlideAjax(this.PROCESSOR);
+    ajax.addParam("sysparm_type", 'set_value');
+    ajax.addParam('sysparm_table', this.tableController.tableName);
+    ajax.addParam('sysparm_first_field', this.tableController.firstField);
+    ajax.addParam('sysparm_omit_links', this.tableController.omitLinks);
+    ajax.addParam('sysparm_xml', this._buildXml());
+    this.tableController.tableElementDOM.fire('glide:list_v2.edit.save', {
+      ajax: ajax
+    });
+    ajax.setErrorCallback(this._errorResponse.bind(this));
+    ajax.getXML(this._saveResponse.bind(this));
+    this.changes.clearAllModified();
+    this.changes.removeAll();
+  },
+  _buildXml: function() {
+    var xml = this._createRecordUpdateXml();
+    var selector = new GlideListEditor.IsModifiedRecordSelector(this.changes);
+    var serializer = new GlideListEditor.XmlSerializingReceiver(xml, xml.documentElement, selector);
+    var capture = new GwtListEditAjaxChangeSaver.ChangeCaptureReceiver();
+    var receiver = new GwtListEditorPendingChanges.ComposableChangeReceiver();
+    receiver.addReceiver(serializer);
+    receiver.addReceiver(capture);
+    this.changes.exportChanges(receiver);
+    this.changedEntries = capture.changedEntries;
+    return getXMLString(xml);
+  },
+  _createRecordUpdateXml: function() {
+    var xml = loadXML("<record_update/>");
+    this.tableController.exportXml(xml.documentElement);
+    return xml;
+  },
+  _saveResponse: function(response) {
+    this._hideSaving();
+    if (!response || !response.responseXML) {
+      if (this.onCompletion)
+        this.onCompletion();
+      return;
+    }
+    var savedSysIds = [];
+    var xml = response.responseXML;
+    var items = xml.getElementsByTagName("item");
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var sysId = item.getAttribute("sys_id");
+      if (savedSysIds.indexOf(sysId) < 0)
+        savedSysIds.push(sysId);
+      var fqField = item.getAttribute("fqField");
+      var data = item.firstChild;
+      if (!data)
+        continue
+      var cell = this.tableController.getFqField(sysId, fqField);
+      if (!cell)
+        continue;
+      GlideList2.updateCellContents(cell, data);
+      var n = new GlideUINotification({
+        type: 'action',
+        attributes: {
+          table: this.tableController.tableName,
+          sys_id: sysId,
+          action: 'list_update'
+        }
+      });
+      GlideUI.get().fire(n);
+    }
+    if (savedSysIds.length > 0)
+      this._fireChangesSaved(savedSysIds);
+    if (this.onCompletion)
+      this.onCompletion();
+  },
+  _errorResponse: function() {
+    this._hideSaving();
+  },
+  _fireChangesSaved: function(savedSysIds) {
+    var info = {
+      listId: this.tableController.listID,
+      saves: savedSysIds
+    };
+    this.tableController.fire('glide:list_v2.edit.changes_saved', info);
+  },
+  _startSavingTimer: function() {
+    this.timer = setTimeout(this._showSaving.bind(this), this.WAIT_INITIAL_DELAY);
+  },
+  _hideSaving: function() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    for (var i = 0; i < this.savingImages.length; i++)
+      rel(this.savingImages[i]);
+    this.savingImages = [];
+  },
+  _showSaving: function() {
+    for (var i = 0; i < this.changedEntries.length; i++) {
+      var sysId = this.changedEntries[i][0];
+      var field = this.changedEntries[i][1];
+      var element = this.tableController.getCell(sysId, field);
+      if (element)
+        this._showImage(element);
+    }
+  },
+  _showImage: function(element) {
+    var img = GwtListEditTableController.showImage(element, this.WAITING_IMAGE);
+    this.savingImages.push(img);
+  },
+  toString: function() {
+    return 'GwtListEditAjaxChangeSaver';
+  }
+});
+GwtListEditAjaxChangeSaver.ChangeCaptureReceiver = Class.create(
+  GwtListEditorPendingChanges.ChangeReceiver, {
+    initialize: function($super) {
+      $super();
+      this.changedEntries = [];
+    },
+    changedField: function(sysID, field) {
+      var entry = [sysID, field.getName()];
+      this.changedEntries.push(entry);
+    },
+    toString: function() {
+      return 'GwtListEditAjaxChangeSaver.ChangeCaptureReceiver';
+    }
+  });;
+/*! RESOURCE: /scripts/GwtListEditAjaxValueLoader.js */
+var GwtListEditAjaxValueLoader = Class.create({
+  PROCESSOR: 'com.glide.ui_list_edit.AJAXListEdit',
+  initialize: function(changes, tableController) {
+    this.changes = changes;
+    this.tableController = tableController;
+    this._clearErrorMsg();
+    this.generatedSysId = null;
+  },
+  loadValues: function(sysIds, fields, callback) {
+    var ajax = new GlideAjax(this.PROCESSOR);
+    ajax.addParam('sysparm_type', 'get_value');
+    ajax.addParam('sysparm_table', this.tableController.tableName);
+    if ((sysIds.length == 1) && (sysIds[0] == "-1"))
+      ajax.addParam("sysparm_default_query", this.tableController.query);
+    if (this._buildIdList(ajax, sysIds, fields)) {
+      this._waitForAjax(ajax, callback, 5000);
+    } else
+      callback();
+  },
+  loadDefaults: function(callback) {
+    this.changes.clearDefaults();
+    this.loadValues(["-1"], this.tableController.getFields(), callback);
+  },
+  loadTable: function(callback) {
+    var ajax = new GlideAjax(this.PROCESSOR);
+    ajax.addParam('sysparm_type', 'get_value');
+    ajax.addParam('sysparm_table', this.tableController.tableName);
+    ajax.addParam('sysparm_query', this.tableController.query);
+    var fields = this.tableController.getFields();
+    ajax.addParam("sysparm_fields", fields.join(','));
+    this._waitForAjax(ajax, callback, 5000);
+  },
+  getErrorMsg: function() {
+    return this.errorMsg;
+  },
+  _buildIdList: function(ajax, sysIds, fields) {
+    var needFields = false;
+    for (var i = 0; i < sysIds.length; i++) {
+      var id = sysIds[i];
+      var fieldList = [];
+      for (var j = 0; j < fields.length; j++) {
+        if (!this.changes.getField(id, fields[j]))
+          fieldList.push(fields[j]);
+      }
+      if (fieldList.length > 0) {
+        needFields = true;
+        ajax.addParam('sysparm_sys_id_' + id, fieldList.join(','));
+      }
+    }
+    return needFields;
+  },
+  _waitForAjax: function(ajax, callback, timeout) {
+    if (timeout < 0)
+      return;
+    if (!this.ajax) {
+      this.ajax = true;
+      ajax.getXML(this._getValuesResponse.bind(this, callback));
+    } else {
+      setTimeout(this._waitForAjax.bind(this, ajax, callback), 10, timeout - 10);
+    }
+  },
+  _getValuesResponse: function(callback, response) {
+    this.ajax = false;
+    if (!response || !response.responseXML) {
+      this.errorMsg = getMessage("No response from server - try again later");
+      callback();
+      return;
+    }
+    var xml = response.responseXML;
+    var items = xml.getElementsByTagName("item");
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var sysId = item.getAttribute("sys_id");
+      this.generatedSysId = item.getAttribute("new_sys_id");
+      var fieldList = item.getAttribute("field_list");
+      var fields;
+      if (fieldList)
+        fields = fieldList.split(',');
+      else
+        fields = [];
+      for (var j = 0; j < fields.length; j++) {
+        var n = fields[j];
+        var fieldItem = this._getXMLFieldItem(item, n);
+        if (!fieldItem)
+          continue;
+        var canWrite = true;
+        if (fieldItem.getAttribute("can_write") == "false")
+          canWrite = false;
+        var mandatory = false;
+        if (fieldItem.getAttribute("mandatory") == "true")
+          mandatory = true;
+        var okExtension = true;
+        if (fieldItem.getAttribute("ok_extension") == "false")
+          okExtension = false;
+        if (!this.changes.getField(sysId, n)) {
+          var f = this._addField(sysId, n);
+          f.setInitialValues(this._getXMLValue(fieldItem, "value"), this._getXMLValue(fieldItem, "displayvalue"));
+          f.setWritable(canWrite);
+          f.setMandatory(mandatory);
+          f.setOKExtension(okExtension);
+          f.setLabel(fieldItem.getAttribute("label"));
+        }
+      }
+    }
+    this._clearErrorMsg();
+    callback();
+  },
+  _getXMLFieldItem: function(parent, n) {
+    for (var i = 0; i < parent.childNodes.length; i++) {
+      var item = parent.childNodes[i];
+      if (item.nodeName.toLowerCase() == n)
+        return item;
+    }
+    return null;
+  },
+  _getXMLValue: function(item, type) {
+    var value = null;
+    var e = item.getElementsByTagName(type);
+    if (e && e.length > 0)
+      value = getTextValue(e[0]);
+    if (!value)
+      value = "";
+    return value;
+  },
+  _addField: function(sysId, field) {
+    var record = this.changes.get(sysId);
+    if (!record)
+      record = this.changes.addRecord(sysId)
+    return record.addField(field);
+  },
+  _clearErrorMsg: function() {
+    this.errorMsg = "";
+  },
+  toString: function() {
+    return 'GwtListEditAjaxValueLoader';
+  }
+});;
+/*! RESOURCE: /scripts/GwtListEditRecordDecorations.js */
+var GwtListEditRecordDecorations = Class.create({
+      MSGS: [
+        'Insert a new row...',
+        'Mark record for List Action',
+        'View',
+        'Save',
+        'Delete',
+        'Display / hide hierarchical lists'
+      ],
+      initialize: function(changes, tableController) {
+        this.changes = changes;
+        this.tableController = tableController;
+        this.msgs = getMessages(this.MSGS);
+        this.updateTable();
+      },
+      updateTable: function() {
+        this.currDecor = {};
+        this.viewDecor = {};
+        this.pendingDecor = {};
+        this.editDecor = {};
+        this.tableController.observe('glide:list_v2.edit.changes_saved', this._handleChangesSaved.bind(this));
+        this.tableController.observe('glide:list_v2.edit.rows_deleted', this._handleRowsDeleted.bind(this));
+        this.tableController.observe('glide:list_v2.edit.changes_deferred', this._handleChangesDeferred.bind(this));
+      },
+      showView: function(sysId) {
+        if (!this.tableController.hasActions)
+          return;
+        var currDecor = this._getCurrDecor(sysId);
+        var showDecor = this._getViewDecor(sysId);
+        this._displayDecor(sysId, showDecor, currDecor);
+        if (this._isDoctype())
+          this._adjustView();
+      },
+      _adjustView: function() {
+        var table = gel(this.tableController.listID + '_table');
+        var popup = $j(table).find('td.list_decoration_cell a.list_popup').last();
+        var row = popup.closest('tr');
+        popup.detach();
+        row.children(':eq(1)').empty().append(popup);
+      },
+      showPending: function(sysId) {
+        var currDecor = this._getCurrDecor(sysId);
+        var showDecor = this._getPendingDecor(sysId);
+        this._displayDecor(sysId, showDecor, currDecor);
+      },
+      showEdit: function(sysId) {
+        var currDecor = this._getCurrDecor(sysId);
+        var showDecor = this._getEditDecor(sysId);
+        this._displayDecor(sysId, showDecor, currDecor);
+      },
+      _displayDecor: function(sysId, showDecor, currDecor) {
+        if (!showDecor)
+          return;
+        if (currDecor && (currDecor !== showDecor))
+          currDecor.hide();
+        this.currDecor[sysId] = showDecor;
+        showDecor.show();
+      },
+      resetSaveIcons: function() {
+        var thisDecor = this;
+        this.tableController.tableElementDOM.select("tr.list_row").each(function(elem) {
+          var sys_id = elem.getAttribute("sys_id");
+          if (sys_id && (elem.hasClassName("list_add") || elem.down(".list_edit_dirty")) && !elem.down("td.list_edit_new_row"))
+            thisDecor.showPending(sys_id);
+        });
+      },
+      resetPendingIcons: function() {
+        var thisDecor = this;
+        this.tableController.tableElementDOM.select("tr.list_row").each(function(elem) {
+          var sys_id = elem.getAttribute("sys_id");
+          if (sys_id && (elem.hasClassName("list_add") || elem.down(".list_edit_dirty")) && !elem.down("td.list_edit_new_row")) {
+            var cell = thisDecor.tableController.getDecorationCell(sys_id);
+            if (cell) {
+              var existingImg = cell.select("img.list_popup");
+              if (existingImg.length > 0)
+                existingImg[0].parentNode.removeChild(existingImg[0]);
+            }
+            thisDecor.showPending(sys_id);
+          }
+        });
+      },
+      _getCurrDecor: function(sysId) {
+        var decor = this.currDecor[sysId];
+        if (decor)
+          return decor;
+        var cell = this.tableController.getDecorationCell(sysId);
+        decor = this._getServerViewDecorations(sysId, cell);
+        if (decor) {
+          this.viewDecor[sysId] = decor;
+          this.currDecor[sysId] = decor;
+          return decor;
+        }
+        return null;
+      },
+      _getViewDecor: function(sysId) {
+        var decor = this.viewDecor[sysId];
+        if (decor)
+          return decor;
+        var cell = this.tableController.getDecorationCell(sysId);
+        if (!cell)
+          return null;
+        decor = this._getServerViewDecorations(sysId, cell);
+        if (decor) {
+          this.viewDecor[sysId] = decor;
+          return decor;
+        }
+        decor = this._buildDecorationSpan(sysId, cell, 'view');
+        this._addViewDecorations(sysId, decor);
+        this.viewDecor[sysId] = decor;
+        return decor;
+      },
+      _getPendingDecor: function(sysId) {
+        var decor = this.pendingDecor[sysId];
+        if (decor)
+          return decor;
+        var cell = this.tableController.getDecorationCell(sysId);
+        cell = $(cell);
+        if (cell.down("[icon_type='save']"))
+          return;
+        decor = this._buildDecorationSpan(sysId, cell, 'unsaved');
+        var existingImg = cell.select("img.list_popup");
+        this._addPendingDecorations(sysId, decor, existingImg);
+        this.pendingDecor[sysId] = decor;
+        return decor;
+      },
+      _getEditDecor: function(sysId) {
+        var decor = this.editDecor[sysId];
+        if (decor)
+          return decor;
+        var cell = this.tableController.getDecorationCell(sysId);
+        decor = this._buildDecorationSpan(sysId, cell, 'edit');
+        this._addEditDecorations(sysId, decor);
+        this.editDecor[sysId] = decor;
+        return decor;
+      },
+      _getServerViewDecorations: function(sysId, cell) {
+        if (!cell)
+          return null;
+        var decor = cell.firstChild;
+        if (!decor)
+          return null;
+        if (!Object.isElement(decor))
+          return null;
+        if ("SPAN" !== decor.tagName)
+          return null;
+        if (decor.id)
+          return null;
+        return $(decor);
+      },
+      _buildDecorationSpan: function(sysId, cell, label) {
+        var decor = $(new Element("span", {
+          'id': sysId + '_' + label,
+          'class': 'list_decoration'
+        }));
+        decor.hide();
+        cell.appendChild(decor);
+        return decor;
+      },
+      _addEditDecorations: function(sysId, span) {
+        if (this.tableController.isFormUI()) {
+          this._addEmbeddedEditIcon(span);
+          return;
+        }
+        this._addEditIcon(span);
+      },
+      _addViewDecorations: function(sysId, span) {
+        if (this.tableController.isFormUI()) {
+          this._addDeleteIcon(span, sysId);
+          this._addSpacerIcon(span);
+          this._addEmbeddedPopUp(span, sysId);
+          return;
+        }
+        this._addCheckBox(span, sysId);
+        if (this.tableController.hasShowableHierarchy())
+          this._addHierarchyIcon(span, sysId);
+        this._addPopUp(span, sysId);
+      },
+      _addPendingDecorations: function(sysId, span, existingImg) {
+        if (this.tableController.isFormUI()) {
+          if (this._isDoctype() && this.changes.isUpdatedRow(sysId))
+            return;
+          this._addDeleteIcon(span, sysId);
+          this._addSpacerIcon(span);
+          if (existingImg && existingImg.length > 0 && existingImg[0].parentElement)
+            this._addEmbeddedPopupIcon(span, sysId, existingImg[0].parentElement);
+          else
+            this._addNewEmbeddedListIcon(span, sysId);
+          return;
+        }
+        if (this.changes.isUpdatedRow(sysId)) {
+          this._addCheckBox(span, sysId);
+          if (this.tableController.hasShowableHierarchy())
+            this._addHierarchyIcon(span, sysId);
+          this._addSavePopUp(span, sysId);
+          return;
+        }
+        this._addDeleteIcon(span, sysId);
+        this._addSaveIcon(span, sysId);
+      },
+      _handleRowsDeleted: function(evt) {
+        this.sortZebra();
+      },
+      _addEditIcon: function(span) {
+        var o = {
+          title: this.msgs['Insert a new row...']
+        };
+        span.insert(this._getTemplate("EDIT_ICON").evaluate(o));
+      },
+      _addCheckBox: function(span, sysId) {
+        var o = {
+          row_id: sysId,
+          listId: this.tableController.listID,
+          title: this.msgs['Mark record for List Action']
+        };
+        span.insert(this._getTemplate("LIST_CHECKBOX_ICON").evaluate(o));
+      },
+      _addPopUp: function(span, sysId) {
+        var o = {
+          row_id: sysId,
+          table: this.tableController.tableName,
+          title: this.msgs['View']
+        };
+        span.insert(this._getTemplate("POPUP_ICON").evaluate(o));
+      },
+      _addSavePopUp: function(span, sysId) {
+          var o
+=======
         }
       }
     }
@@ -6110,3 +6668,4 @@ function initListEdit() {
   GwtListEditor.forPage.enableDirtyFormMessages();
 }
 addAfterPageLoadedEvent(initListEdit);;;
+>>>>>>> master
